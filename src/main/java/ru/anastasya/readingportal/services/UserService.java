@@ -1,0 +1,142 @@
+package ru.anastasya.readingportal.services;
+
+import ru.anastasya.readingportal.dao.UserDAO;
+import ru.anastasya.readingportal.exception.AuthorizationException;
+import ru.anastasya.readingportal.exception.RegistrationException;
+import ru.anastasya.readingportal.exception.ServiceException;
+import ru.anastasya.readingportal.models.User;
+import ru.anastasya.readingportal.utils.PasswordUtil;
+
+import java.util.List;
+
+public class UserService {
+
+    private final UserDAO userDAO;
+    private final PasswordResetCodeService resetCodeService;
+
+    public UserService(UserDAO userDAO, PasswordResetCodeService resetCodeService){
+        this.userDAO = userDAO;
+        this.resetCodeService = resetCodeService;
+    }
+
+    public void registerUser(User user){
+        if (user.getNickname().length()>30){
+            throw new RegistrationException("Слишком длинный никнейм");
+        }
+        if (userDAO.existsEmail(user.getEmail())){
+            throw new RegistrationException("Аккаунт с такой почтой уже существует");
+        }
+        if (userDAO.existsNickname(user.getNickname())){
+            throw new RegistrationException("Аккаунт с таким никнеймом уже существует");
+        }
+
+        String hashPassword = PasswordUtil.hashPassword(user.getPassword_hash());
+        user.setPassword_hash(hashPassword);
+
+        userDAO.save(user);
+    }
+
+    public User authorizationUser(String emailOrNickname, String password){
+
+        User user = userDAO.findFullUserByEmailOrNickname(emailOrNickname);
+        if (user == null){
+            throw new AuthorizationException("Неверная почта или пароль");
+        }
+
+        if(PasswordUtil.checkPassword(password, user.getPassword_hash())){
+            return user;
+        }
+        else{
+            throw new AuthorizationException("Неверная почта или пароль");
+        }
+
+    }
+
+
+    public void changePassword(Long id, String oldPassword, String newPassword){
+
+        User user = userDAO.findFullUserById(id);
+        if (PasswordUtil.checkPassword(oldPassword, user.getPassword_hash())){
+            String newPasswordHash = PasswordUtil.hashPassword(newPassword);
+            userDAO.updatePasswordHash(id, newPasswordHash);
+        }
+        else{
+            throw new ServiceException("Старый пароль введен неверно");
+        }
+
+    }
+
+    public void changePassword(String email, String code, String newPassword){
+
+        User user = userDAO.findByEmail(email);
+
+        if (user==null){
+            throw new ServiceException("Неверный код или почта");
+        }
+
+        Long UserId = user.getId();
+
+        if(!resetCodeService.validCode(UserId, code)){
+            throw new ServiceException("Неверный код или почта");
+        }
+
+        resetCodeService.deleteCodes(UserId);
+
+        String hash_password = PasswordUtil.hashPassword(newPassword);
+
+        userDAO.updatePasswordHash(user.getId(), hash_password);
+
+    }
+
+    public void changeNickname(Long id, String newNickname){
+        User user = userDAO.findById(id);
+        if (user==null){
+            throw new ServiceException("Пользователь не найден");
+        }
+        if (user.getNickname().equals(newNickname)){
+            return;
+        }
+        if (userDAO.existsNickname(newNickname)){
+            throw new ServiceException("Такой никнейм уже существует");
+        }
+        user.setNickname(newNickname);
+        userDAO.update(user);
+    }
+
+    public void changeEmail(Long id, String password, String newEmail){
+        User user = userDAO.findFullUserById(id);
+        if (user==null){
+            throw new ServiceException("Пользователь не найден");
+        }
+        if (user.getEmail().equals(newEmail)){
+            return;
+        }
+        if (!PasswordUtil.checkPassword(password, user.getPassword_hash())){
+            throw new ServiceException("Пароль неверный");
+        }
+        if (userDAO.existsEmail(newEmail)){
+            throw new ServiceException("Такой адрес электронной почты уже занят");
+        }
+
+        user.setEmail(newEmail);
+        userDAO.update(user);
+    }
+
+    public List<User> findAllUser(){
+        return userDAO.findAll();
+    }
+
+    public User findById(Long id){
+        return userDAO.findById(id);
+    }
+
+    public User findUserByNickname(String Nickname){
+        return userDAO.findByNickname(Nickname);
+    }
+
+    public void deleteUser(Long id){
+        userDAO.delete(id);
+        //потом добавить вопрос оставляем ваши книги или нет?
+    }
+
+}

@@ -7,34 +7,34 @@ public class User {
     private Long id;
     private String nickname;
     private String email;
-    private String password_hash;
-    private LocalDateTime created_at;
+    private String passwordHash;
+    private LocalDateTime createdAt;
 
     public User() {
 
     }
 
-    public User(Long id, String nickname, String email, LocalDateTime created_at) {
+    public User(Long id, String nickname, String email, LocalDateTime createdAt) {
         this.id = id;
         this.nickname = nickname;
         this.email = email;
-        this.created_at = created_at;
+        this.createdAt = createdAt;
     }
 
-    public User(String nickname, String email, String password_hash, LocalDateTime created_at) {
+    public User(String nickname, String email, String passwordHash, LocalDateTime createdAt) {
         this.id = null;
         this.nickname = nickname;
         this.email = email;
-        this.password_hash = password_hash;
-        this.created_at = created_at;
+        this.passwordHash = passwordHash;
+        this.createdAt = createdAt;
     }
 
-    public User(Long id, String nickname, String email, String password_hash, LocalDateTime created_at) {
+    public User(Long id, String nickname, String email, String passwordHash, LocalDateTime createdAt) {
         this.id = id;
         this.nickname = nickname;
         this.email = email;
-        this.password_hash = password_hash;
-        this.created_at = created_at;
+        this.passwordHash = passwordHash;
+        this.createdAt = createdAt;
     }
 
     @Override
@@ -43,8 +43,8 @@ public class User {
                 "id=" + id +
                 ", nickname='" + nickname + '\'' +
                 ", email='" + email + '\'' +
-                ", password_hash='" + password_hash + '\'' +
-                ", created_at=" + created_at +
+                ", password_hash='" + passwordHash + '\'' +
+                ", created_at=" + createdAt +
                 '}';
     }
 
@@ -72,19 +72,19 @@ public class User {
         this.email = email;
     }
 
-    public String getPassword_hash() {
-        return password_hash;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public void setPassword_hash(String password_hash) {
-        this.password_hash = password_hash;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
-    public LocalDateTime getCreated_at() {
-        return created_at;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreated_at(LocalDateTime created_at) {
-        this.created_at = created_at;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

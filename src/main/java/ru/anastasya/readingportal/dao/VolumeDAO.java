@@ -18,30 +18,42 @@ public class VolumeDAO {
             WHERE id = ?;
             """;
     private static final String SAVE_VOLUME_SQL = """
-            INSERT INTO volumes(title, volume_main_number, volume_sub_number, book_id)
-            VALUES (?, ?, ?, ?);""";
+            INSERT INTO volumes(title, volume_main_number, volume_sub_number, book_id, is_default)
+            VALUES (?, ?, ?, ?, ?);""";
     private static final String DELETE_VOLUME_SQL = "DELETE FROM volumes WHERE id = ?;";
+    private static final String DELETE_ALL_VOLUMES_BY_BOOK_ID_SQL = "DELETE FROM volumes WHERE book_id = ?;";
     private static final String FIND_LAST_MAIN_VOLUME_NUMBER_SQL = """
             SELECT MAX(volume_main_number)
             FROM volumes
             WHERE book_id = ?;""";
     private static final String FIND_VOLUME_BY_ID_SQL = "SELECT * FROM volumes WHERE id = ?;";
     private static final String FIND_ALL_VOLUMES_BY_BOOK_ID_SQL = "SELECT * FROM volumes WHERE book_id = ?;";
+    private static final String FIND_DEFAULT_VOLUME_BY_BOOK_ID_SQL = "SELECT * FROM volumes WHERE book_id = ? and is_default = ?";
+    private static final String EXISTS_VOLUME_NUMBER_SQL = """
+            SELECT COUNT(*) FROM volumes
+            WHERE book_id = ? AND volume_main_number = ? AND volume_sub_number = ?;""";
+    private static final String GET_VOLUME_COUNT_BY_BOOK_ID_SQL = """
+            SELECT COUNT(*) FROM volumes
+            WHERE book_id = ? and is_default = ?;""";
 
-    public void save(Volume volume){
+    public Long save(Volume volume){
         Objects.requireNonNull(volume, "Нельзя сохранить null volume");
-        CRUDutil.insert(SAVE_VOLUME_SQL, volume.getTitle(), volume.getVolume_main_number(),
-                volume.getVolume_sub_number(), volume.getBook_id());
+        return CRUDutil.insert(SAVE_VOLUME_SQL, volume.getTitle(), volume.getVolumeMainNumber(),
+                volume.getVolumeSubNumber(), volume.getBookId(), volume.isIs_default());
     }
 
     public void update(Volume volume){
         Objects.requireNonNull(volume, "Нельзя изменить null volume");
-        CRUDutil.update(UPDATE_VOLUME_SQL, volume.getTitle(), volume.getVolume_main_number(),
-                volume.getVolume_sub_number(), volume.getId());
+        CRUDutil.update(UPDATE_VOLUME_SQL, volume.getTitle(), volume.getVolumeMainNumber(),
+                volume.getVolumeSubNumber(), volume.getId());
     }
 
     public void delete(Long volumeId){
         CRUDutil.update(DELETE_VOLUME_SQL, volumeId);
+    }
+
+    public void deleteAllByBookId(Long bookId){
+        CRUDutil.update(DELETE_ALL_VOLUMES_BY_BOOK_ID_SQL, bookId);
     }
 
     public int findLastMainNumberByBookId(Long bookId){
@@ -56,13 +68,32 @@ public class VolumeDAO {
         return CRUDutil.readMany(FIND_ALL_VOLUMES_BY_BOOK_ID_SQL, this::Map, bookId);
     }
 
+    public Long createDefaultByBookId(Long bookId){
+        return CRUDutil.insert(SAVE_VOLUME_SQL, "Базовый том", 0, 0, bookId, true);
+    }
+
+    public Volume findDefaultByBookId(Long bookId){
+        return CRUDutil.readOne(FIND_DEFAULT_VOLUME_BY_BOOK_ID_SQL, this::Map, bookId, true);
+    }
+
+    public int getVolumeCountByBookId(Long bookId){
+        return CRUDutil.readOne(GET_VOLUME_COUNT_BY_BOOK_ID_SQL, rs -> rs.getInt(1), bookId, false);
+    }
+
+    public boolean existsVolumeNumber(Long bookId, int volumeMainNumber, int volumeSubNumber){
+        int count = CRUDutil.readOne(EXISTS_VOLUME_NUMBER_SQL, rs -> rs.getInt(1),
+                bookId, volumeMainNumber, volumeSubNumber);
+        return count>0;
+    }
+
     private Volume Map(ResultSet resultSet) throws SQLException{
         Long id = resultSet.getLong("id");
         String title = resultSet.getString("title");
         int volume_main_number = resultSet.getInt("volume_main_number");
         int volume_sub_number = resultSet.getInt("volume_sub_number");
-        Long book_id = resultSet.getLong("book_id");
-        return new Volume(id, title, volume_main_number, volume_sub_number, book_id);
+        Long bookId = resultSet.getLong("book_id");
+        boolean isDefault = resultSet.getBoolean("is_default");
+        return new Volume(id, title, volume_main_number, volume_sub_number, bookId, isDefault);
     }
 
 }

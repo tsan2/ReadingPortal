@@ -2,6 +2,7 @@ package ru.anastasya.readingportal.utils;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class CRUDutil {
@@ -84,6 +85,38 @@ public class CRUDutil {
             throw new RuntimeException(e);
         }
 
+    }
+
+    public static <K, T> HashMap<K, List<T>> readHashMapKeyAndObjects(String sql, String keyName, Class<K> type, RowMapper<T> mapper, Object... params){
+        HashMap<K, List<T>> map = new HashMap<>();
+        try(Connection connection = DBConnector.getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
+            for (int i=1; i <= params.length; i++){
+                preparedStatement.setObject(i, params[i-1]);
+            }
+
+            ResultSet rs = preparedStatement.executeQuery();
+            while (rs.next()){
+                K key = rs.getObject(keyName, type);
+                T object = mapper.map(rs);
+
+                List<T> list;
+                if (map.containsKey(key)){
+                    list = map.get(key);
+                }
+                else{
+                    list = new ArrayList<>();
+                }
+                list.add(object);
+                map.put(key, list);
+            }
+
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return map;
     }
 
 

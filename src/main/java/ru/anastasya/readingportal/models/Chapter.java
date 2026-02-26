@@ -5,47 +5,47 @@ public class Chapter {
     private Long id;
     private String title;
     private String content;
-    private int chapter_main_number;
-    private int chapter_sub_number;
-    private Long volume_id;
+    private int chapterMainNumber;
+    private int chapterSubNumber;
+    private Long volumeId;
 
     public Chapter() {
     }
 
-    public Chapter(String title, int chapter_main_number, int chapter_sub_number, Long volume_id) {
+    public Chapter(String title, int chapterMainNumber, int chapterSubNumber, Long volumeId) {
         this.id = null;
         this.title = title;
         this.content = null;
-        this.chapter_main_number = chapter_main_number;
-        this.chapter_sub_number = chapter_sub_number;
-        this.volume_id = volume_id;
+        this.chapterMainNumber = chapterMainNumber;
+        this.chapterSubNumber = chapterSubNumber;
+        this.volumeId = volumeId;
     }
 
-    public Chapter(String title, String content, int chapter_main_number, int chapter_sub_number, Long volume_id) {
+    public Chapter(String title, String content, int chapterMainNumber, int chapterSubNumber, Long volumeId) {
         this.id = null;
         this.title = title;
         this.content = content;
-        this.chapter_main_number = chapter_main_number;
-        this.chapter_sub_number = chapter_sub_number;
-        this.volume_id = volume_id;
+        this.chapterMainNumber = chapterMainNumber;
+        this.chapterSubNumber = chapterSubNumber;
+        this.volumeId = volumeId;
     }
 
-    public Chapter(Long id, String title, int chapter_main_number, int chapter_sub_number, Long volume_id) {
+    public Chapter(Long id, String title, int chapterMainNumber, int chapterSubNumber, Long volumeId) {
         this.id = id;
         this.title = title;
         this.content = null;
-        this.chapter_main_number = chapter_main_number;
-        this.chapter_sub_number = chapter_sub_number;
-        this.volume_id = volume_id;
+        this.chapterMainNumber = chapterMainNumber;
+        this.chapterSubNumber = chapterSubNumber;
+        this.volumeId = volumeId;
     }
 
-    public Chapter(Long id, String title, String content, int chapter_main_number, int chapter_sub_number, Long volume_id) {
+    public Chapter(Long id, String title, String content, int chapterMainNumber, int chapterSubNumber, Long volumeId) {
         this.id = id;
         this.title = title;
         this.content = content;
-        this.chapter_main_number = chapter_main_number;
-        this.chapter_sub_number = chapter_sub_number;
-        this.volume_id = volume_id;
+        this.chapterMainNumber = chapterMainNumber;
+        this.chapterSubNumber = chapterSubNumber;
+        this.volumeId = volumeId;
     }
 
     @Override
@@ -54,9 +54,9 @@ public class Chapter {
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
-                ", chapter_main_number=" + chapter_main_number +
-                ", chapter_sub_number=" + chapter_sub_number +
-                ", volume_id=" + volume_id +
+                ", chapter_main_number=" + chapterMainNumber +
+                ", chapter_sub_number=" + chapterSubNumber +
+                ", volume_id=" + volumeId +
                 '}';
     }
 
@@ -84,27 +84,27 @@ public class Chapter {
         this.content = content;
     }
 
-    public int getChapter_main_number() {
-        return chapter_main_number;
+    public int getChapterMainNumber() {
+        return chapterMainNumber;
     }
 
-    public void setChapter_main_number(int chapter_main_number) {
-        this.chapter_main_number = chapter_main_number;
+    public void setChapterMainNumber(int chapterMainNumber) {
+        this.chapterMainNumber = chapterMainNumber;
     }
 
-    public int getChapter_sub_number() {
-        return chapter_sub_number;
+    public int getChapterSubNumber() {
+        return chapterSubNumber;
     }
 
-    public void setChapter_sub_number(int chapter_sub_number) {
-        this.chapter_sub_number = chapter_sub_number;
+    public void setChapterSubNumber(int chapterSubNumber) {
+        this.chapterSubNumber = chapterSubNumber;
     }
 
-    public Long getVolume_id() {
-        return volume_id;
+    public Long getVolumeId() {
+        return volumeId;
     }
 
-    public void setVolume_id(Long volume_id) {
-        this.volume_id = volume_id;
+    public void setVolumeId(Long volumeId) {
+        this.volumeId = volumeId;
     }
 }

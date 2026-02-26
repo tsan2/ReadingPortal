@@ -1,5 +1,7 @@
 package ru.anastasya.readingportal.dao;
 
+import ru.anastasya.readingportal.dto.BookFilter;
+import ru.anastasya.readingportal.dto.BookSortStrategy;
 import ru.anastasya.readingportal.models.Book;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.utils.CRUDutil;
@@ -7,6 +9,7 @@ import ru.anastasya.readingportal.utils.CRUDutil;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,7 +32,8 @@ public class BookDAO {
             """;
     private static final String UPDATE_BOOK_SQL = """
             UPDATE books
-            SET title = ?
+            SET title = ?,
+            date_changed = ?
             WHERE id = ?;
             """;
     private static final String SAVE_BOOK_SQL = "INSERT INTO books(title) VALUES (?);";
@@ -40,17 +44,21 @@ public class BookDAO {
     private static final String DELETE_GENRE_FROM_BOOK_SQL = "DELETE FROM books_genres WHERE book_id = ? and genre_id = ?;";
     private static final String DELETE_ALL_GENRES_FROM_BOOK_SQL = "DELETE FROM books_genres WHERE book_id = ?;";
     private static final String DELETE_BOOK_SQL = "DELETE FROM books WHERE id = ?;";
+    private static final String EXISTS_BOOK_SQL = "SELECT COUNT(*) FROM books WHERE id = ?;";
+    private static final String IS_GENRE_ADDED_SQL = "SELECT COUNT(*) FROM books_genres WHERE book_id = ? and genre_id = ?;";
+    private static final String IS_AUTHOR_ADDED_SQL = "SELECT COUNT(*) FROM books_authors WHERE book_id = ? and author_id = ?;";
 
     //поч невозможно достать книгу с авторами и жанрами
 
-    public void save(Book book){
+    public Long save(Book book){
         Objects.requireNonNull(book, "Нельзя сохранить null book");
-        CRUDutil.insert(SAVE_BOOK_SQL, book.getTitle());
+        Long newId = CRUDutil.insert(SAVE_BOOK_SQL, book.getTitle());
+        return newId;
     }
 
     public void update(Book book){
         Objects.requireNonNull(book, "Нельзя изменить null book");
-        CRUDutil.update(UPDATE_BOOK_SQL, book.getTitle(), book.getId());
+        CRUDutil.update(UPDATE_BOOK_SQL, book.getTitle(), book.getId(), LocalDateTime.now());
     }
 
     public void delete(Long bookId){
@@ -85,12 +93,40 @@ public class BookDAO {
         return CRUDutil.readOne(FIND_BOOK_BY_ID_SQL, this::Map, id);
     }
 
-    public List<Book> findBooksByGenreId(Long genreId){
-        return CRUDutil.readMany(FIND_BOOKS_BY_GENRE_ID_SQL, this::Map, genreId);
+    public List<Book> findBooksByBookFilter(BookFilter bookFilter) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT *
+                FROM books b
+                WHERE 1=1""");
+        List<Object> params = new ArrayList<>();
+        if (bookFilter.getAuthorId() != null) {
+            sql.append(" AND id IN (SELECT book_id FROM books_authors WHERE user_id = ?)");
+            params.add(bookFilter.getAuthorId());
+        }
+        if (bookFilter.getGenreId() != null) {
+            sql.append(" AND id IN (SELECT book_id FROM books_genres WHERE genre_id = ?)");
+            params.add(bookFilter.getGenreId());
+        }
+        if (bookFilter.getBookSortStrategy() != null) {
+            sql.append(" " + bookFilter.getBookSortStrategy().getSql());
+        }
+
+        return CRUDutil.readMany(sql.toString(), this::Map, params);
     }
 
-    public List<Book> findBooksByAuthorId(Long authorId){
-        return CRUDutil.readMany(FIND_BOOKS_BY_AUTHOR_ID_SQL, this::Map, authorId);
+    public boolean exists(Long id){
+        int count =  CRUDutil.readOne(EXISTS_BOOK_SQL, rs -> rs.getInt(1), id);
+        return count > 0;
+    }
+
+    public boolean isGenreAdded(Long bookId, Long genreId){
+        int count =  CRUDutil.readOne(IS_GENRE_ADDED_SQL, rs -> rs.getInt(1), bookId, genreId);
+        return count > 0;
+    }
+
+    public boolean isAuthorAdded(Long bookId, Long authorId){
+        int count =  CRUDutil.readOne(IS_AUTHOR_ADDED_SQL, rs -> rs.getInt(1), bookId, authorId);
+        return count > 0;
     }
 
     private Book Map(ResultSet resultSet) throws SQLException{

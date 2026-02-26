@@ -4,28 +4,39 @@ public class Volume {
 
     private Long id;
     private String title;
-    private int volume_main_number;
-    private int volume_sub_number;
-    private Long book_id;
+    private int volumeMainNumber;
+    private int volumeSubNumber;
+    private Long bookId;
+    private boolean is_default;
 
     public Volume() {
 
     }
 
-    public Volume(String title, int volume_main_number, int volume_sub_number, Long book_id) {
+    public Volume(String title, int volumeMainNumber, int volumeSubNumber, Long bookId) {
         this.id = null;
         this.title = title;
-        this.volume_main_number = volume_main_number;
-        this.volume_sub_number = volume_sub_number;
-        this.book_id = book_id;
+        this.volumeMainNumber = volumeMainNumber;
+        this.volumeSubNumber = volumeSubNumber;
+        this.bookId = bookId;
     }
 
-    public Volume(Long id, String title, int volume_main_number, int volume_sub_number, Long book_id) {
+    public Volume(String title, int volumeMainNumber, int volumeSubNumber, Long bookId, boolean is_default) {
+        this.id = null;
+        this.title = title;
+        this.volumeMainNumber = volumeMainNumber;
+        this.volumeSubNumber = volumeSubNumber;
+        this.bookId = bookId;
+        this.is_default = is_default;
+    }
+
+    public Volume(Long id, String title, int volumeMainNumber, int volumeSubNumber, Long bookId, boolean is_default) {
         this.id = id;
         this.title = title;
-        this.volume_main_number = volume_main_number;
-        this.volume_sub_number = volume_sub_number;
-        this.book_id = book_id;
+        this.volumeMainNumber = volumeMainNumber;
+        this.volumeSubNumber = volumeSubNumber;
+        this.bookId = bookId;
+        this.is_default = is_default;
     }
 
     @Override
@@ -33,9 +44,9 @@ public class Volume {
         return "Volume{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", volume_main_number=" + volume_main_number +
-                ", volume_sub_number=" + volume_sub_number +
-                ", book_id=" + book_id +
+                ", volume_main_number=" + volumeMainNumber +
+                ", volume_sub_number=" + volumeSubNumber +
+                ", book_id=" + bookId +
                 '}';
     }
 
@@ -55,27 +66,35 @@ public class Volume {
         this.title = title;
     }
 
-    public int getVolume_main_number() {
-        return volume_main_number;
+    public int getVolumeMainNumber() {
+        return volumeMainNumber;
     }
 
-    public void setVolume_main_number(int volume_main_number) {
-        this.volume_main_number = volume_main_number;
+    public void setVolumeMainNumber(int volumeMainNumber) {
+        this.volumeMainNumber = volumeMainNumber;
     }
 
-    public int getVolume_sub_number() {
-        return volume_sub_number;
+    public int getVolumeSubNumber() {
+        return volumeSubNumber;
     }
 
-    public void setVolume_sub_number(int volume_sub_number) {
-        this.volume_sub_number = volume_sub_number;
+    public void setVolumeSubNumber(int volumeSubNumber) {
+        this.volumeSubNumber = volumeSubNumber;
     }
 
-    public Long getBook_id() {
-        return book_id;
+    public Long getBookId() {
+        return bookId;
     }
 
-    public void setBook_id(Long book_id) {
-        this.book_id = book_id;
+    public void setBookId(Long bookId) {
+        this.bookId = bookId;
+    }
+
+    public boolean isIs_default() {
+        return is_default;
+    }
+
+    public void setIs_default(boolean is_default) {
+        this.is_default = is_default;
     }
 }

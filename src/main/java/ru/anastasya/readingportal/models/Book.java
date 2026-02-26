@@ -7,8 +7,8 @@ public class Book {
 
     private Long id;
     private String title;
-    private LocalDateTime date_changed;
-    private LocalDateTime created_at;
+    private LocalDateTime dateChanged;
+    private LocalDateTime createdAt;
 
     private List<Genre> genres;
     private List<User> authors;
@@ -16,34 +16,34 @@ public class Book {
     public Book() {
     }
 
-    public Book(String title, LocalDateTime date_changed, LocalDateTime created_at) {
+    public Book(String title, LocalDateTime dateChanged, LocalDateTime createdAt) {
         this.id = null;
         this.title = title;
-        this.date_changed = date_changed;
-        this.created_at = created_at;
+        this.dateChanged = dateChanged;
+        this.createdAt = createdAt;
     }
 
-    public Book(String title, LocalDateTime date_changed, LocalDateTime created_at, List<Genre> genres, List<User> authors) {
+    public Book(String title, LocalDateTime dateChanged, LocalDateTime createdAt, List<Genre> genres, List<User> authors) {
         this.id = null;
         this.title = title;
-        this.date_changed = date_changed;
-        this.created_at = created_at;
+        this.dateChanged = dateChanged;
+        this.createdAt = createdAt;
         this.genres = genres;
         this.authors = authors;
     }
 
-    public Book(Long id, String title, LocalDateTime date_changed, LocalDateTime created_at) {
+    public Book(Long id, String title, LocalDateTime dateChanged, LocalDateTime createdAt) {
         this.id = id;
         this.title = title;
-        this.date_changed = date_changed;
-        this.created_at = created_at;
+        this.dateChanged = dateChanged;
+        this.createdAt = createdAt;
     }
 
-    public Book(Long id, String title, LocalDateTime date_changed, LocalDateTime created_at, List<Genre> genres, List<User> authors) {
+    public Book(Long id, String title, LocalDateTime dateChanged, LocalDateTime createdAt, List<Genre> genres, List<User> authors) {
         this.id = id;
         this.title = title;
-        this.date_changed = date_changed;
-        this.created_at = created_at;
+        this.dateChanged = dateChanged;
+        this.createdAt = createdAt;
         this.genres = genres;
         this.authors = authors;
     }
@@ -53,19 +53,19 @@ public class Book {
         return "Book{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", date_changed=" + date_changed +
-                ", created_at=" + created_at +
+                ", date_changed=" + dateChanged +
+                ", created_at=" + createdAt +
                 ", genres=" + genres +
                 ", authors=" + authors +
                 '}';
     }
 
-    public LocalDateTime getCreated_at() {
-        return created_at;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setCreated_at(LocalDateTime created_at) {
-        this.created_at = created_at;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public List<Genre> getGenres() {
@@ -100,11 +100,11 @@ public class Book {
         this.title = title;
     }
 
-    public LocalDateTime getDate_changed() {
-        return date_changed;
+    public LocalDateTime getDateChanged() {
+        return dateChanged;
     }
 
-    public void setDate_changed(LocalDateTime date_changed) {
-        this.date_changed = date_changed;
+    public void setDateChanged(LocalDateTime dateChanged) {
+        this.dateChanged = dateChanged;
     }
 }

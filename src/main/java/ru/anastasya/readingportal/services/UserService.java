@@ -20,6 +20,7 @@ public class UserService {
     }
 
     public void registerUser(User user){
+        validateUser(user);
         if (user.getNickname().length()>30){
             throw new RegistrationException("Слишком длинный никнейм");
         }
@@ -30,8 +31,8 @@ public class UserService {
             throw new RegistrationException("Аккаунт с таким никнеймом уже существует");
         }
 
-        String hashPassword = PasswordUtil.hashPassword(user.getPassword_hash());
-        user.setPassword_hash(hashPassword);
+        String hashPassword = PasswordUtil.hashPassword(user.getPasswordHash());
+        user.setPasswordHash(hashPassword);
 
         userDAO.save(user);
     }
@@ -43,7 +44,7 @@ public class UserService {
             throw new AuthorizationException("Неверная почта или пароль");
         }
 
-        if(PasswordUtil.checkPassword(password, user.getPassword_hash())){
+        if(PasswordUtil.checkPassword(password, user.getPasswordHash())){
             return user;
         }
         else{
@@ -56,7 +57,7 @@ public class UserService {
     public void changePassword(Long id, String oldPassword, String newPassword){
 
         User user = userDAO.findFullUserById(id);
-        if (PasswordUtil.checkPassword(oldPassword, user.getPassword_hash())){
+        if (PasswordUtil.checkPassword(oldPassword, user.getPasswordHash())){
             String newPasswordHash = PasswordUtil.hashPassword(newPassword);
             userDAO.updatePasswordHash(id, newPasswordHash);
         }
@@ -82,9 +83,9 @@ public class UserService {
 
         resetCodeService.deleteCodes(UserId);
 
-        String hash_password = PasswordUtil.hashPassword(newPassword);
+        String hashPassword = PasswordUtil.hashPassword(newPassword);
 
-        userDAO.updatePasswordHash(user.getId(), hash_password);
+        userDAO.updatePasswordHash(user.getId(), hashPassword);
 
     }
 
@@ -111,7 +112,7 @@ public class UserService {
         if (user.getEmail().equals(newEmail)){
             return;
         }
-        if (!PasswordUtil.checkPassword(password, user.getPassword_hash())){
+        if (!PasswordUtil.checkPassword(password, user.getPasswordHash())){
             throw new ServiceException("Пароль неверный");
         }
         if (userDAO.existsEmail(newEmail)){
@@ -137,6 +138,19 @@ public class UserService {
     public void deleteUser(Long id){
         userDAO.delete(id);
         //потом добавить вопрос оставляем ваши книги или нет?
+    }
+
+    private void validateUser(User user){
+        if (user.getNickname() == null || user.getNickname().isBlank()){
+            throw new ServiceException("Никнейм не может быть пустым");
+        }
+        //потом добавить проверку почты
+        if (user.getEmail() == null || user.getEmail().isBlank()){
+            throw new ServiceException("Почта не может быть пустой");
+        }
+        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()){
+            throw new ServiceException("Пароль не может быть пустым");
+        }
     }
 
 }

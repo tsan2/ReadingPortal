@@ -21,7 +21,8 @@ id serial PRIMARY KEY,
 title text,
 volume_main_number INTEGER NOT NULL,
 volume_sub_number INTEGER DEFAULT 0,
-book_id INTEGER REFERENCES books(id) ON DELETE CASCADE NOT NULL
+book_id INTEGER REFERENCES books(id) ON DELETE CASCADE NOT NULL,
+is_default BOOLEAN DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS chapters(

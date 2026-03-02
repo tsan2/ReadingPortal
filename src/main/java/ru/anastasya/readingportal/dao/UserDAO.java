@@ -7,10 +7,7 @@ import ru.anastasya.readingportal.utils.CRUDutil;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class UserDAO{
 
@@ -18,7 +15,7 @@ public class UserDAO{
     private static final String FIND_USER_BY_ID_SQL = "SELECT id, nickname, email, created_at FROM users WHERE id=?;";
     private static final String FIND_USER_BY_NICKNAME_SQL = "SELECT id, nickname, email, created_at FROM users WHERE nickname=?;";
     private static final String FIND_USER_BY_EMAIL_SQL = "SELECT id, nickname, email, created_at FROM users WHERE email=?;";
-    private static final String SAVE_USER_SQL = "INSERT INTO users(nickname, email, password_hash) VALUES (?, ?, ?, ?);";
+    private static final String SAVE_USER_SQL = "INSERT INTO users(nickname, email, password_hash) VALUES (?, ?, ?);";
     private static final String FIND_USER_BY_BOOK_ID_SQL = """
             SELECT u.id, u.nickname, u.email, u.created_at
             FROM users u
@@ -92,26 +89,27 @@ public class UserDAO{
         return user;
     }
 
-
     public User findFullUserById(Long id){
         User user = CRUDutil.readOne(FIND_FULL_USER_BY_ID_SQL, this::fullMap, id);
         return user;
     }
 
     public HashMap<Long, List<User>> findAllAuthorsOfBooks(List<Book> books){
+        List<Long> userIds = new ArrayList<>();
         StringBuilder sql = new StringBuilder("""
                 SELECT ba.book_id, u.id, u.nickname, u.email, u.created_at FROM users u
                 JOIN books_authors ba
                 ON ba.user_id=u.id
                 WHERE ba.book_id IN (""");
         for (int i = 0; i<books.size()-1; i++){
-            sql.append(books.get(i));
-            sql.append(", ");
+            userIds.add(books.get(i).getId());
+            sql.append("?, ");
         }
-        sql.append(books.getLast());
-        sql.append(")");
 
-        return CRUDutil.readHashMapKeyAndObjects(sql.toString(), "book_id", Long.class, this::publicMap);
+        userIds.add(books.getLast().getId());
+        sql.append("?)");
+
+        return CRUDutil.readHashMapKeyAndObjects(sql.toString(), "book_id", Long.class, this::publicMap, userIds.toArray());
     }
 
     public boolean existsEmail(String email){

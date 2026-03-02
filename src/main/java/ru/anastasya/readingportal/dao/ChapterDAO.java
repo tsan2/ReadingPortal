@@ -44,9 +44,9 @@ public class ChapterDAO {
             SELECT COUNT(*) FROM chapters
             WHERE volume_id = ? AND chapter_main_number = ? AND chapter_sub_number = ?;""";
 
-    public void save(Chapter chapter){
+    public Long save(Chapter chapter){
         Objects.requireNonNull(chapter, "Нельзя сохранить null chapter");
-        CRUDutil.insert(SAVE_CHAPTER_SQL, chapter.getTitle(), chapter.getContent(),
+        return CRUDutil.insert(SAVE_CHAPTER_SQL, chapter.getTitle(), chapter.getContent(),
                 chapter.getChapterMainNumber(), chapter.getChapterSubNumber(), chapter.getVolumeId());
     }
 

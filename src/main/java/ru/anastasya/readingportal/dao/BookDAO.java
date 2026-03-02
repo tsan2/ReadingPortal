@@ -1,9 +1,7 @@
 package ru.anastasya.readingportal.dao;
 
 import ru.anastasya.readingportal.dto.BookFilter;
-import ru.anastasya.readingportal.dto.BookSortStrategy;
 import ru.anastasya.readingportal.models.Book;
-import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.utils.CRUDutil;
 
 import java.sql.ResultSet;
@@ -46,7 +44,7 @@ public class BookDAO {
     private static final String DELETE_BOOK_SQL = "DELETE FROM books WHERE id = ?;";
     private static final String EXISTS_BOOK_SQL = "SELECT COUNT(*) FROM books WHERE id = ?;";
     private static final String IS_GENRE_ADDED_SQL = "SELECT COUNT(*) FROM books_genres WHERE book_id = ? and genre_id = ?;";
-    private static final String IS_AUTHOR_ADDED_SQL = "SELECT COUNT(*) FROM books_authors WHERE book_id = ? and author_id = ?;";
+    private static final String IS_USER_AUTHOR_OF_BOOK_SQL = "SELECT COUNT(*) FROM books_authors WHERE book_id = ? and user_id = ?;";
 
     //поч невозможно достать книгу с авторами и жанрами
 
@@ -111,7 +109,7 @@ public class BookDAO {
             sql.append(" " + bookFilter.getBookSortStrategy().getSql());
         }
 
-        return CRUDutil.readMany(sql.toString(), this::Map, params);
+        return CRUDutil.readMany(sql.toString(), this::Map, params.toArray());
     }
 
     public boolean exists(Long id){
@@ -124,8 +122,8 @@ public class BookDAO {
         return count > 0;
     }
 
-    public boolean isAuthorAdded(Long bookId, Long authorId){
-        int count =  CRUDutil.readOne(IS_AUTHOR_ADDED_SQL, rs -> rs.getInt(1), bookId, authorId);
+    public boolean isUserAuthorOfBook(Long bookId, Long authorId){
+        int count =  CRUDutil.readOne(IS_USER_AUTHOR_OF_BOOK_SQL, rs -> rs.getInt(1), bookId, authorId);
         return count > 0;
     }
 

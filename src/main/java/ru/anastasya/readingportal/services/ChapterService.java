@@ -1,8 +1,9 @@
 package ru.anastasya.readingportal.services;
 
+import ru.anastasya.readingportal.dao.BookDAO;
 import ru.anastasya.readingportal.dao.ChapterDAO;
-import ru.anastasya.readingportal.dao.VolumeDAO;
 import ru.anastasya.readingportal.dto.ChapterCreateDTO;
+import ru.anastasya.readingportal.exception.AuthorizationException;
 import ru.anastasya.readingportal.exception.ServiceException;
 import ru.anastasya.readingportal.models.Chapter;
 import ru.anastasya.readingportal.models.Volume;
@@ -15,18 +16,23 @@ public class ChapterService {
 
     private final ChapterDAO chapterDAO;
     private final VolumeService volumeService;
+    private final BookDAO bookDAO;
 
-    public ChapterService(ChapterDAO chapterDAO, VolumeService volumeService){
+    public ChapterService(ChapterDAO chapterDAO, VolumeService volumeService, BookDAO bookDAO){
         this.chapterDAO = chapterDAO;
         this.volumeService = volumeService;
+        this.bookDAO = bookDAO;
     }
 
     // и возможно в подсчете глав добавить условие не дефолтная и в уникальном индексе
-    public OperationResult createChapter(ChapterCreateDTO dto){
+    public OperationResult createChapterPlaceHolder(ChapterCreateDTO dto, Long currentUserId){
         if (dto.getVolumeId() == null){
             Volume volume = volumeService.findDefaultVolume(dto.getBookId());
             dto.setVolumeId(volume.getId());
         }
+
+        checkAuthorityByVolumeId(dto.getVolumeId(), currentUserId);
+
         Chapter chapter = new Chapter(dto.getTitle(), dto.getChapterMainNumber(), dto.getChapterSubNumber(), dto.getVolumeId());
 
         Objects.requireNonNull(chapter.getVolumeId(), "volumeId не может быть null");
@@ -51,11 +57,12 @@ public class ChapterService {
             warningMessage = "Вы пропускаете номер главы. Последний номер сейчас: " + maxNumber;
         }
 
-        chapterDAO.save(chapter);
-        return new OperationResult(true, warningMessage);
+        Long id = chapterDAO.save(chapter);
+        return new OperationResult(id, true, warningMessage);
     }
 
-    public void addContent(Long chapterId, String content){
+    public void addContent(Long chapterId, String content, Long currentUserId){
+        checkAuthorityByChapterId(chapterId, currentUserId);
         if (content.length() > 2_000_000){
             throw new ServiceException("Текст главы слишком длинный. Максимум 2 миллиона символов");
         }
@@ -67,7 +74,8 @@ public class ChapterService {
         return chapterDAO.findFullById(id);
     }
 
-    public void changeTitle(Long id, String newTitle){
+    public void changeTitle(Long id, String newTitle, Long currentUserId){
+        checkAuthorityByChapterId(id, currentUserId);
         Chapter chapter = chapterDAO.findInfoById(id);
         if (newTitle == null || newTitle.isBlank()){
             throw new ServiceException("Название не может быть пустым");
@@ -80,7 +88,9 @@ public class ChapterService {
         chapterDAO.updateMetadata(chapter);
     }
 
-    public OperationResult changeChapterNumber(Long id, int chapterMainNumber, int chapterSubNumber){
+    public OperationResult changeChapterNumber(Long id, int chapterMainNumber, int chapterSubNumber, Long currentUserId){
+        checkAuthorityByChapterId(id, currentUserId);
+
         Chapter chapter = chapterDAO.findInfoById(id);
         String warningMessage = null;
 
@@ -99,18 +109,41 @@ public class ChapterService {
         chapter.setChapterSubNumber(chapterSubNumber);
 
         chapterDAO.updateMetadata(chapter);
-        return new OperationResult(true, warningMessage);
+        return new OperationResult(null, true, warningMessage);
     }
 
     public List<Chapter> findAllByVolumeId(Long volumeId){
         return chapterDAO.findAllInfoByVolumeId(volumeId);
     }
 
-    public void deleteChapter(Long id){
+    public Chapter findInfoById(Long id){
+        return chapterDAO.findInfoById(id);
+    }
+
+    public void deleteChapter(Long id, Long currentUserId){
+        checkAuthorityByChapterId(id, currentUserId);
         chapterDAO.delete(id);
     }
 
-    public void deleteAllChapter(Long volumeId){
+    public void deleteAllChapter(Long volumeId, Long currentUserId){
+        checkAuthorityByVolumeId(volumeId, currentUserId);
         chapterDAO.deleteAllByVolumeId(volumeId);
+    }
+
+    private void checkAuthorityByChapterId(Long chapterId, Long userId){
+        Long volumeId = chapterDAO.findInfoById(chapterId).getVolumeId();
+        Long bookId = volumeService.findById(volumeId).getBookId();
+
+        if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
+            throw new AuthorizationException("У вас нет прав");
+        }
+    }
+
+    private void checkAuthorityByVolumeId(Long volumeId, Long userId){
+        Long bookId = volumeService.findById(volumeId).getBookId();
+
+        if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
+            throw new AuthorizationException("У вас нет прав");
+        }
     }
 }

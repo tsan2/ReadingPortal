@@ -14,7 +14,8 @@ public class VolumeDAO {
             UPDATE volumes
             SET title = ?,
             volume_main_number = ?,
-            volume_sub_number = ?
+            volume_sub_number = ?,
+            is_default = ?
             WHERE id = ?;
             """;
     private static final String SAVE_VOLUME_SQL = """
@@ -25,13 +26,13 @@ public class VolumeDAO {
     private static final String FIND_LAST_MAIN_VOLUME_NUMBER_SQL = """
             SELECT MAX(volume_main_number)
             FROM volumes
-            WHERE book_id = ?;""";
+            WHERE book_id = ? AND is_default = ?;""";
     private static final String FIND_VOLUME_BY_ID_SQL = "SELECT * FROM volumes WHERE id = ?;";
-    private static final String FIND_ALL_VOLUMES_BY_BOOK_ID_SQL = "SELECT * FROM volumes WHERE book_id = ?;";
+    private static final String FIND_ALL_VOLUMES_BY_BOOK_ID_SQL = "SELECT * FROM volumes WHERE book_id = ? AND is_default = ?;";
     private static final String FIND_DEFAULT_VOLUME_BY_BOOK_ID_SQL = "SELECT * FROM volumes WHERE book_id = ? and is_default = ?";
     private static final String EXISTS_VOLUME_NUMBER_SQL = """
             SELECT COUNT(*) FROM volumes
-            WHERE book_id = ? AND volume_main_number = ? AND volume_sub_number = ?;""";
+            WHERE book_id = ? AND volume_main_number = ? AND volume_sub_number = ? AND is_default = ?;""";
     private static final String GET_VOLUME_COUNT_BY_BOOK_ID_SQL = """
             SELECT COUNT(*) FROM volumes
             WHERE book_id = ? and is_default = ?;""";
@@ -45,7 +46,7 @@ public class VolumeDAO {
     public void update(Volume volume){
         Objects.requireNonNull(volume, "Нельзя изменить null volume");
         CRUDutil.update(UPDATE_VOLUME_SQL, volume.getTitle(), volume.getVolumeMainNumber(),
-                volume.getVolumeSubNumber(), volume.getId());
+                volume.getVolumeSubNumber(), volume.isIs_default(), volume.getId());
     }
 
     public void delete(Long volumeId){
@@ -57,15 +58,15 @@ public class VolumeDAO {
     }
 
     public int findLastMainNumberByBookId(Long bookId){
-        return CRUDutil.readOne(FIND_LAST_MAIN_VOLUME_NUMBER_SQL, rs -> rs.getInt(1), bookId);
+        return CRUDutil.readOne(FIND_LAST_MAIN_VOLUME_NUMBER_SQL, rs -> rs.getInt(1), bookId, false);
     }
 
     public Volume findById(Long id){
         return CRUDutil.readOne(FIND_VOLUME_BY_ID_SQL, this::Map, id);
     }
 
-    public List<Volume> findAllByBookId(Long bookId){
-        return CRUDutil.readMany(FIND_ALL_VOLUMES_BY_BOOK_ID_SQL, this::Map, bookId);
+    public List<Volume> findNotDefaultAllByBookId(Long bookId){
+        return CRUDutil.readMany(FIND_ALL_VOLUMES_BY_BOOK_ID_SQL, this::Map, bookId, false);
     }
 
     public Long createDefaultByBookId(Long bookId){
@@ -76,13 +77,13 @@ public class VolumeDAO {
         return CRUDutil.readOne(FIND_DEFAULT_VOLUME_BY_BOOK_ID_SQL, this::Map, bookId, true);
     }
 
-    public int getVolumeCountByBookId(Long bookId){
+    public int getNotDefaultVolumeCountByBookId(Long bookId){
         return CRUDutil.readOne(GET_VOLUME_COUNT_BY_BOOK_ID_SQL, rs -> rs.getInt(1), bookId, false);
     }
 
     public boolean existsVolumeNumber(Long bookId, int volumeMainNumber, int volumeSubNumber){
         int count = CRUDutil.readOne(EXISTS_VOLUME_NUMBER_SQL, rs -> rs.getInt(1),
-                bookId, volumeMainNumber, volumeSubNumber);
+                bookId, volumeMainNumber, volumeSubNumber, false);
         return count>0;
     }
 

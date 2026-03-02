@@ -21,6 +21,13 @@ public class User {
         this.createdAt = createdAt;
     }
 
+    public User(String nickname, String email, String passwordHash) {
+        this.id = null;
+        this.nickname = nickname;
+        this.email = email;
+        this.passwordHash = passwordHash;
+    }
+
     public User(String nickname, String email, String passwordHash, LocalDateTime createdAt) {
         this.id = null;
         this.nickname = nickname;

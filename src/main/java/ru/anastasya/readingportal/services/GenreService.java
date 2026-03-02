@@ -42,4 +42,8 @@ public class GenreService {
     public List<Genre> findAll(){
         return genreDAO.findAll();
     }
+
+    public List<Genre> findAllByBookId(Long bookId){
+        return genreDAO.findAllByBookId(bookId);
+    }
 }

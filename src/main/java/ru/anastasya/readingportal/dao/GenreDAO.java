@@ -7,6 +7,7 @@ import ru.anastasya.readingportal.utils.CRUDutil;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -64,19 +65,21 @@ public class GenreDAO {
     }
 
     public HashMap<Long, List<Genre>> findAllGenresOfBooks(List<Book> books){
+        List<Long> genreIds = new ArrayList<>();
         StringBuilder sql = new StringBuilder("""
-                SELECT ba.book_id, g.id, g.name FROM genres g
+                SELECT bg.book_id, g.id, g.name FROM genres g
                 JOIN books_genres bg
                 ON bg.genre_id=g.id
                 WHERE bg.book_id IN (""");
         for (int i = 0; i<books.size()-1; i++){
-            sql.append(books.get(i));
-            sql.append(", ");
+            genreIds.add(books.get(i).getId());
+            sql.append("?, ");
         }
-        sql.append(books.getLast());
-        sql.append(")");
 
-        return CRUDutil.readHashMapKeyAndObjects(sql.toString(), "book_id", Long.class, this::Map);
+        genreIds.add(books.getLast().getId());
+        sql.append("?)");
+
+        return CRUDutil.readHashMapKeyAndObjects(sql.toString(), "book_id", Long.class, this::Map, genreIds.toArray());
     }
 
     public boolean exists(Long id){

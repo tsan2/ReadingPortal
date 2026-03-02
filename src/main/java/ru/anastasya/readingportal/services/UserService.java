@@ -13,16 +13,21 @@ public class UserService {
 
     private final UserDAO userDAO;
     private final PasswordResetCodeService resetCodeService;
+    private final BookService bookService;
 
-    public UserService(UserDAO userDAO, PasswordResetCodeService resetCodeService){
+    public UserService(UserDAO userDAO, PasswordResetCodeService resetCodeService, BookService bookService){
         this.userDAO = userDAO;
         this.resetCodeService = resetCodeService;
+        this.bookService = bookService;
     }
 
     public void registerUser(User user){
         validateUser(user);
         if (user.getNickname().length()>30){
             throw new RegistrationException("Слишком длинный никнейм");
+        }
+        if (!user.getEmail().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+[.][a-zA-Z]{2,}$")){
+            throw new RegistrationException("Это не адрес электронной почты");
         }
         if (userDAO.existsEmail(user.getEmail())){
             throw new RegistrationException("Аккаунт с такой почтой уже существует");
@@ -45,6 +50,7 @@ public class UserService {
         }
 
         if(PasswordUtil.checkPassword(password, user.getPasswordHash())){
+            user.setPasswordHash(null);
             return user;
         }
         else{
@@ -135,9 +141,12 @@ public class UserService {
         return userDAO.findByNickname(Nickname);
     }
 
-    public void deleteUser(Long id){
+    public void deleteUser(Long id, boolean deleteBookOrNo){
+        if (deleteBookOrNo){
+            bookService.deleteAllBookByUserId(id);
+        }
         userDAO.delete(id);
-        //потом добавить вопрос оставляем ваши книги или нет?
+
     }
 
     private void validateUser(User user){

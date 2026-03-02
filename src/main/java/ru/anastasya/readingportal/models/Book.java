@@ -16,6 +16,11 @@ public class Book {
     public Book() {
     }
 
+    public Book(String title) {
+        this.id = null;
+        this.title = title;
+    }
+
     public Book(String title, LocalDateTime dateChanged, LocalDateTime createdAt) {
         this.id = null;
         this.title = title;

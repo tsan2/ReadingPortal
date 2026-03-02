@@ -1,6 +1,8 @@
 package ru.anastasya.readingportal.services;
 
+import ru.anastasya.readingportal.dao.BookDAO;
 import ru.anastasya.readingportal.dao.VolumeDAO;
+import ru.anastasya.readingportal.exception.AuthorizationException;
 import ru.anastasya.readingportal.exception.ServiceException;
 import ru.anastasya.readingportal.models.Volume;
 import ru.anastasya.readingportal.utils.OperationResult;
@@ -11,15 +13,20 @@ import java.util.Objects;
 public class VolumeService {
 
     private final VolumeDAO volumeDAO;
+    private final BookDAO bookDAO;
 
-    public VolumeService(VolumeDAO volumeDAO){
+    public VolumeService(VolumeDAO volumeDAO, BookDAO bookDAO){
         this.volumeDAO = volumeDAO;
+        this.bookDAO = bookDAO;
     }
 
-    public OperationResult createVolume(Volume volume){
+    public OperationResult createVolume(Volume volume, Long currentUserId){
         Objects.requireNonNull(volume.getBookId(), "bookId не может быть null");
 
+        checkAuthorityByBookId(volume.getBookId(), currentUserId);
+
         String warningMessage = null;
+        Long id = null;
 
         if (volume.getTitle() == null || volume.getTitle().isBlank()){
             throw new ServiceException("Название не может быть пустым");
@@ -37,7 +44,7 @@ public class VolumeService {
 
         volume.setIs_default(false);
 
-        if (volumeDAO.getVolumeCountByBookId(volume.getBookId())==0){
+        if (volumeDAO.getNotDefaultVolumeCountByBookId(volume.getBookId())==0){
             Volume defaultVolume = findDefaultVolume(volume.getBookId());
             volume.setId(defaultVolume.getId());
             volumeDAO.update(volume);
@@ -46,20 +53,23 @@ public class VolumeService {
             if (volumeDAO.existsVolumeNumber(volume.getBookId(), volume.getVolumeMainNumber(), volume.getVolumeSubNumber())){
                 throw new ServiceException("Такой номер тома уже существует");
             }
-            volumeDAO.save(volume);
+            id = volumeDAO.save(volume);
         }
-        return new OperationResult(true, warningMessage);
+        return new OperationResult(id, true, warningMessage);
     }
 
-    public Long createDefaultVolume(Long bookId){
+    public Long createDefaultVolume(Long bookId, Long currentUserId){
+        checkAuthorityByBookId(bookId, currentUserId);
         return volumeDAO.createDefaultByBookId(bookId);
     }
-    //при удалении тома добавить логику если последний то создаем опять дефолтный
+
     public Volume findDefaultVolume(Long bookId){
         return volumeDAO.findDefaultByBookId(bookId);
     }
 
-    public void changeTitle(Long id, String newTitle){
+    public void changeTitle(Long id, String newTitle, Long currentUserId){
+        checkAuthorityByVolumeId(id, currentUserId);
+
         Volume volume = volumeDAO.findById(id);
         if (newTitle == null || newTitle.isBlank()){
             throw new ServiceException("Название не может быть пустым");
@@ -72,7 +82,9 @@ public class VolumeService {
         volumeDAO.update(volume);
     }
 
-    public OperationResult changeVolumeNumber(Long id, int volumeMainNumber, int volumeSubNumber){
+    public OperationResult changeVolumeNumber(Long id, int volumeMainNumber, int volumeSubNumber, Long currentUserId){
+        checkAuthorityByVolumeId(id, currentUserId);
+
         Volume volume = volumeDAO.findById(id);
         String warningMessage = null;
 
@@ -91,32 +103,56 @@ public class VolumeService {
         volume.setVolumeSubNumber(volumeSubNumber);
 
         volumeDAO.update(volume);
-        return new OperationResult(true, warningMessage);
+        return new OperationResult(null, true, warningMessage);
     }
 
     public List<Volume> findAllByBookId(Long book_id){
-        return volumeDAO.findAllByBookId(book_id);
+        return volumeDAO.findNotDefaultAllByBookId(book_id);
     }
 
-    public void deleteVolume(Long id){
+    public Volume findById(Long id){
+        return volumeDAO.findById(id);
+    }
+
+    public void deleteVolume(Long id, Long currentUserId){
+        checkAuthorityByVolumeId(id, currentUserId);
+
         volumeDAO.delete(id);
-        if (volumeDAO.getVolumeCountByBookId(id) == 0){
-            createDefaultVolume(id);
+        if (volumeDAO.getNotDefaultVolumeCountByBookId(id) == 0){
+            createDefaultVolume(id, currentUserId);
         }
     }
 
-    public void deleteAllVolume(Long bookId){
+    public void deleteAllVolume(Long bookId, Long currentUserId){
+        checkAuthorityByBookId(bookId, currentUserId);
         volumeDAO.deleteAllByBookId(bookId);
-        createDefaultVolume(bookId);
+        createDefaultVolume(bookId, currentUserId);
     }
 
-    public void deleteDefaultVolume(Long bookId){
+    public void deleteDefaultVolume(Long bookId, Long currentUserId){
+        checkAuthorityByBookId(bookId, currentUserId);
         Volume volume = volumeDAO.findById(bookId);
         if (volume.isIs_default()){
             volumeDAO.delete(bookId);
         }
     }
 
+    public boolean existsNotDefaultVolume(Long bookId){
+        return volumeDAO.getNotDefaultVolumeCountByBookId(bookId) > 0;
+    }
 
+    private void checkAuthorityByVolumeId(Long volumeId, Long userId){
+        Long bookId = volumeDAO.findById(volumeId).getBookId();
+
+        if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
+            throw new AuthorizationException("У вас нет прав");
+        }
+    }
+
+    private void checkAuthorityByBookId(Long bookId, Long userId){
+        if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
+            throw new AuthorizationException("У вас нет прав");
+        }
+    }
 
 }

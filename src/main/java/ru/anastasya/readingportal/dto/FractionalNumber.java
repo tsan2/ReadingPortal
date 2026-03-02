@@ -1,4 +1,4 @@
 package ru.anastasya.readingportal.dto;
 
-public record fractionalNumber() {
+public record FractionalNumber(int mainNumber, Integer SubNumber) {
 }

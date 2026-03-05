@@ -133,14 +133,14 @@ public class BookService {
     public void deleteBook(Long bookId, Long currentUserId){
         checkAuthority(bookId, currentUserId);
 
-        bookDAO.deleteAllGenresFromBook(bookId);
-        bookDAO.deleteAllAuthorsFromBook(bookId);
         List<Volume> volumes = volumeService.findAllByBookId(bookId);
         for (Volume volume : volumes){
             chapterService.deleteAllChapter(volume.getId(), currentUserId);
         }
         volumeService.deleteAllVolume(bookId, currentUserId);
         volumeService.deleteDefaultVolume(bookId, currentUserId);
+        bookDAO.deleteAllGenresFromBook(bookId);
+        bookDAO.deleteAllAuthorsFromBook(bookId);
         bookDAO.delete(bookId);
     }
 

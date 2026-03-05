@@ -182,7 +182,7 @@ public class ConsoleApp {
         }
         System.out.println("Ваши книги");
         for (Book book : books){
-            System.out.print(book.getId() + " " + book.getTitle() + " " + book.getCreatedAt() + " ");
+            System.out.print(book.getId() + " " + book.getTitle() + " " + book.getCreatedAt().toLocalDate() + " ");
             if (book.getGenres() != null){
                 for (Genre genre : book.getGenres()){
                     System.out.print("Жанры - ");
@@ -397,7 +397,7 @@ public class ConsoleApp {
 
         System.out.println("Результат");
         for (Book book : books){
-            System.out.print(book.getId() + " " + book.getTitle() + " " + book.getCreatedAt() + " ");
+            System.out.print(book.getId() + " " + book.getTitle() + " " + book.getCreatedAt().toLocalDate() + " ");
             if (book.getGenres() != null){
                 for (Genre genre : book.getGenres()){
                     System.out.print("Жанры - ");

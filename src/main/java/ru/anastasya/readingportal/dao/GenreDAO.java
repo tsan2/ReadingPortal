@@ -14,6 +14,14 @@ import java.util.Objects;
 
 public class GenreDAO {
 
+    private static final GenreDAO INSTANCE = new GenreDAO();
+
+    private GenreDAO(){}
+
+    public static GenreDAO getInstance(){
+        return INSTANCE;
+    }
+
     private static final String SAVE_GENRE_SQL = "INSERT INTO genres(name) VALUES (?)";
     private static final String UPDATE_GENRE_SQL = """
             UPDATE genres

@@ -13,19 +13,19 @@ import java.util.Objects;
 //добавить возможность проверки есть ли тома у книги
 public class BookService {
 
-    private final BookDAO bookDAO;
-    private final UserDAO userDAO;
-    private final GenreDAO genreDAO;
-    private final ChapterService chapterService;
-    private final VolumeService volumeService;
+    private final static BookService INSTANCE = new BookService();
 
-    public BookService(BookDAO bookDAO, UserDAO userDAO, GenreDAO genreDAO, ChapterService chapterService, VolumeService volumeService) {
-        this.bookDAO = bookDAO;
-        this.userDAO = userDAO;
-        this.genreDAO = genreDAO;
-        this.chapterService = chapterService;
-        this.volumeService = volumeService;
+    private BookService(){}
+
+    public static BookService getInstance(){
+        return INSTANCE;
     }
+
+    private final BookDAO bookDAO = BookDAO.getInstance();
+    private final UserDAO userDAO = UserDAO.getInstance();
+    private final GenreDAO genreDAO = GenreDAO.getInstance();
+    private final ChapterService chapterService = ChapterService.getInstance();
+    private final VolumeService volumeService = VolumeService.getInstance();
 
     public Long createBookPlaceholder(Book book, Long authorId){
         Objects.requireNonNull(book, "нельзя создать null book");

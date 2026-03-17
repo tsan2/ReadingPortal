@@ -9,11 +9,16 @@ import java.util.Objects;
 
 public class GenreService {
 
-    private final GenreDAO genreDAO;
+    private final static GenreService INSTANCE = new GenreService();
 
-    public GenreService(GenreDAO genreDAO) {
-        this.genreDAO = genreDAO;
+    private GenreService(){}
+
+    public static GenreService getInstance(){
+        return INSTANCE;
     }
+
+    private final GenreDAO genreDAO = GenreDAO.getInstance();
+
 
     public void createGenre(Genre genre){
         Objects.requireNonNull(genre, "Нельзя создать null genre");

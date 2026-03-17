@@ -9,6 +9,14 @@ import java.time.LocalDateTime;
 
 public class PasswordResetCodeDAO {
 
+    private static final PasswordResetCodeDAO INSTANCE = new PasswordResetCodeDAO();
+
+    private PasswordResetCodeDAO(){}
+
+    public static PasswordResetCodeDAO getInstance(){
+        return INSTANCE;
+    }
+
     private static final String SAVE_CODE_SQL = "INSERT INTO password_reset_codes(user_id, code, expires_at) VALUES (?, ?, ?);";
     private static final String FIND_VALID_CODE_SQL = """
             SELECT * FROM password_reset_codes

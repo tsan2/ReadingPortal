@@ -11,15 +11,18 @@ import java.time.LocalDateTime;
 
 public class PasswordResetCodeService {
 
-    private final PasswordResetCodeDAO resetCodeDAO;
-    private final EmailService emailService;
-    private final UserDAO userDAO;
+    private final static PasswordResetCodeService INSTANCE = new PasswordResetCodeService();
 
-    public PasswordResetCodeService(PasswordResetCodeDAO resetCodeDAO, EmailService emailService, UserDAO userDAO){
-        this.resetCodeDAO = resetCodeDAO;
-        this.emailService = emailService;
-        this.userDAO = userDAO;
+    private PasswordResetCodeService(){}
+
+    public static PasswordResetCodeService getInstance(){
+        return INSTANCE;
     }
+
+    private final PasswordResetCodeDAO resetCodeDAO = PasswordResetCodeDAO.getInstance();
+    private final EmailService emailService = EmailService.getInstance();
+    private final UserDAO userDAO = UserDAO.getInstance();
+
 
     public void sendCode(String email){
         User user = userDAO.findByEmail(email);

@@ -9,7 +9,16 @@ import java.util.List;
 import java.util.Objects;
 
 public class VolumeDAO {
-    //сделать потом чтобы была подсказка к номеру главы или как то так
+
+    private static final VolumeDAO INSTANCE = new VolumeDAO();
+
+    private VolumeDAO(){}
+
+    public static VolumeDAO getInstance(){
+        return INSTANCE;
+    }
+
+
     private static final String UPDATE_VOLUME_SQL = """
             UPDATE volumes
             SET title = ?,

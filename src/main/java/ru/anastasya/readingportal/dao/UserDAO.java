@@ -11,6 +11,14 @@ import java.util.*;
 
 public class UserDAO{
 
+    private static final UserDAO INSTANCE = new UserDAO();
+
+    private UserDAO(){}
+
+    public static UserDAO getInstance(){
+        return INSTANCE;
+    }
+
     private static final String FIND_ALL_USERS_SQL = "SELECT id, nickname, email, created_at FROM users;";
     private static final String FIND_USER_BY_ID_SQL = "SELECT id, nickname, email, created_at FROM users WHERE id=?;";
     private static final String FIND_USER_BY_NICKNAME_SQL = "SELECT id, nickname, email, created_at FROM users WHERE nickname=?;";

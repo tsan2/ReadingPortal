@@ -13,6 +13,14 @@ import java.util.Objects;
 
 public class BookDAO {
 
+    private static final BookDAO INSTANCE = new BookDAO();
+
+    private BookDAO(){}
+
+    public static BookDAO getInstance(){
+        return INSTANCE;
+    }
+
     private static final String FIND_BOOK_BY_ID_SQL = "SELECT * FROM books WHERE id = ?;";
     private static final String FIND_BOOKS_BY_GENRE_ID_SQL = """
             SELECT b.id, b.title, b.date_changed, b.created_at

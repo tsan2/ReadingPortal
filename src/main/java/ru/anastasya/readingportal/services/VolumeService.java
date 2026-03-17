@@ -12,13 +12,16 @@ import java.util.Objects;
 
 public class VolumeService {
 
-    private final VolumeDAO volumeDAO;
-    private final BookDAO bookDAO;
+    private final static VolumeService INSTANCE = new VolumeService();
 
-    public VolumeService(VolumeDAO volumeDAO, BookDAO bookDAO){
-        this.volumeDAO = volumeDAO;
-        this.bookDAO = bookDAO;
+    private VolumeService(){}
+
+    public static VolumeService getInstance(){
+        return INSTANCE;
     }
+
+    private final VolumeDAO volumeDAO = VolumeDAO.getInstance();
+    private final BookDAO bookDAO = BookDAO.getInstance();
 
     public OperationResult createVolume(Volume volume, Long currentUserId){
         Objects.requireNonNull(volume.getBookId(), "bookId не может быть null");

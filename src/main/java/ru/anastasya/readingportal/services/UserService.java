@@ -11,15 +11,18 @@ import java.util.List;
 
 public class UserService {
 
-    private final UserDAO userDAO;
-    private final PasswordResetCodeService resetCodeService;
-    private final BookService bookService;
+    private final static UserService INSTANCE = new UserService();
 
-    public UserService(UserDAO userDAO, PasswordResetCodeService resetCodeService, BookService bookService){
-        this.userDAO = userDAO;
-        this.resetCodeService = resetCodeService;
-        this.bookService = bookService;
+    private UserService(){}
+
+    public static UserService getInstance(){
+        return INSTANCE;
     }
+
+    private final UserDAO userDAO = UserDAO.getInstance();
+    private final PasswordResetCodeService resetCodeService = PasswordResetCodeService.getInstance();
+    private final BookService bookService = BookService.getInstance();
+
 
     public void registerUser(User user){
         validateUser(user);

@@ -10,6 +10,15 @@ import java.util.Objects;
 
 public class ChapterDAO {
 
+    private static final ChapterDAO INSTANCE = new ChapterDAO();
+
+    private ChapterDAO(){}
+
+    public static ChapterDAO getInstance(){
+        return INSTANCE;
+    }
+
+
     private static final String UPDATE_CHAPTER_METADATA_SQL = """
             UPDATE chapters
             SET title = ?,

@@ -14,15 +14,18 @@ import java.util.Objects;
 
 public class ChapterService {
 
-    private final ChapterDAO chapterDAO;
-    private final VolumeService volumeService;
-    private final BookDAO bookDAO;
+    private final static ChapterService INSTANCE = new ChapterService();
 
-    public ChapterService(ChapterDAO chapterDAO, VolumeService volumeService, BookDAO bookDAO){
-        this.chapterDAO = chapterDAO;
-        this.volumeService = volumeService;
-        this.bookDAO = bookDAO;
+    private ChapterService(){}
+
+    public static ChapterService getInstance(){
+        return INSTANCE;
     }
+
+    private final ChapterDAO chapterDAO = ChapterDAO.getInstance();
+    private final VolumeService volumeService = VolumeService.getInstance();
+    private final BookDAO bookDAO = BookDAO.getInstance();
+
 
     // и возможно в подсчете глав добавить условие не дефолтная и в уникальном индексе
     public OperationResult createChapterPlaceHolder(ChapterCreateDTO dto, Long currentUserId){

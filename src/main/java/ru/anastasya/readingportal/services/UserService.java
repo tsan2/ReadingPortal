@@ -1,6 +1,7 @@
 package ru.anastasya.readingportal.services;
 
 import ru.anastasya.readingportal.dao.UserDAO;
+import ru.anastasya.readingportal.dto.UserSummaryDTO;
 import ru.anastasya.readingportal.exception.AuthorizationException;
 import ru.anastasya.readingportal.exception.RegistrationException;
 import ru.anastasya.readingportal.exception.ServiceException;
@@ -132,8 +133,14 @@ public class UserService {
         userDAO.update(user);
     }
 
-    public List<User> findAllUser(){
-        return userDAO.findAll();
+    public List<UserSummaryDTO> findAllUser(int page, int size){
+        int offset = (page-1)*size;
+        List<User> users = userDAO.findAll(size, offset);
+        List<UserSummaryDTO> userSummaryDTOS = users.stream()
+                .map(u -> new UserSummaryDTO(u.getId(), u.getNickname()))
+                .toList();
+
+        return userSummaryDTOS;
     }
 
     public User findById(Long id){
@@ -156,7 +163,6 @@ public class UserService {
         if (user.getNickname() == null || user.getNickname().isBlank()){
             throw new ServiceException("Никнейм не может быть пустым");
         }
-        //потом добавить проверку почты
         if (user.getEmail() == null || user.getEmail().isBlank()){
             throw new ServiceException("Почта не может быть пустой");
         }

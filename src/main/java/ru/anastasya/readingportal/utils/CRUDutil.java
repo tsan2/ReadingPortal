@@ -90,13 +90,13 @@ public class CRUDutil {
     public static <K, T> HashMap<K, List<T>> readHashMapKeyAndObjects(String sql, String keyName, Class<K> type, RowMapper<T> mapper, Object... params){
         HashMap<K, List<T>> map = new HashMap<>();
         try(Connection connection = DBConnector.getConnection();
-        PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            ResultSet rs = preparedStatement.executeQuery()) {
 
             for (int i=1; i <= params.length; i++){
                 preparedStatement.setObject(i, params[i-1]);
             }
 
-            ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()){
                 K key = rs.getObject(keyName, type);
                 T object = mapper.map(rs);

@@ -19,7 +19,7 @@ public class UserDAO{
         return INSTANCE;
     }
 
-    private static final String FIND_ALL_USERS_SQL = "SELECT id, nickname, email, created_at FROM users;";
+    private static final String FIND_ALL_USERS_SQL = "SELECT id, nickname, email, created_at FROM users LIMIT ? OFFSET ?;";
     private static final String FIND_USER_BY_ID_SQL = "SELECT id, nickname, email, created_at FROM users WHERE id=?;";
     private static final String FIND_USER_BY_NICKNAME_SQL = "SELECT id, nickname, email, created_at FROM users WHERE nickname=?;";
     private static final String FIND_USER_BY_EMAIL_SQL = "SELECT id, nickname, email, created_at FROM users WHERE email=?;";
@@ -52,8 +52,8 @@ public class UserDAO{
     private static final String EXISTS_NICKNAME_SQL = "SELECT COUNT(id) FROM users WHERE nickname=?;";
     private static final String EXISTS_USER_SQL = "SELECT COUNT(*) FROM users WHERE id = ?;";
 
-    public List<User> findAll(){
-        List<User> list = CRUDutil.readMany(FIND_ALL_USERS_SQL, this::publicMap);
+    public List<User> findAll(int limit, int offset){
+        List<User> list = CRUDutil.readMany(FIND_ALL_USERS_SQL, this::publicMap, limit, offset);
         return list;
     }
 

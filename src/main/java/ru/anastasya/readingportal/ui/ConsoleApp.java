@@ -10,7 +10,6 @@ import ru.anastasya.readingportal.exception.ServiceException;
 import ru.anastasya.readingportal.models.*;
 import ru.anastasya.readingportal.services.*;
 import ru.anastasya.readingportal.utils.OperationResult;
-import ru.anastasya.readingportal.utils.SessionContext;
 
 import java.math.BigDecimal;
 import java.util.List;

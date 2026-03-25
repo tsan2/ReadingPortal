@@ -28,6 +28,13 @@ public class DBConnector {
 
     public static Connection getConnection(){
         try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            System.out.println("Кто то взял соединение");
             return DriverManager.getConnection(dbURL, dbUsername, dbPassword);
         } catch (SQLException e) {
             throw new RuntimeException("Не удалось подключиться к базе данных", e);

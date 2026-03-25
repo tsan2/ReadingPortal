@@ -2,7 +2,7 @@ package ru.anastasya.readingportal.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class JsonMapper {
+public class JsonUtil {
 
     private static final ObjectMapper INSTANCE = new ObjectMapper().findAndRegisterModules();
 

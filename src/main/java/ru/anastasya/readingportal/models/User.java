@@ -1,8 +1,9 @@
 package ru.anastasya.readingportal.models;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class User {
+public class User implements Serializable {
 
     private Long id;
     private String nickname;

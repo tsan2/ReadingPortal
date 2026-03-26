@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import ru.anastasya.readingportal.dto.ForgotPasswordDTO;
+import ru.anastasya.readingportal.dto.ResetPasswordDTO;
 import ru.anastasya.readingportal.dto.UserLoginDTO;
 import ru.anastasya.readingportal.dto.UserRegisterDTO;
 import ru.anastasya.readingportal.exception.AuthenticationException;
@@ -14,7 +16,10 @@ import ru.anastasya.readingportal.exception.ConflictException;
 import ru.anastasya.readingportal.exception.RegistrationException;
 import ru.anastasya.readingportal.exception.ValidationException;
 import ru.anastasya.readingportal.models.User;
+import ru.anastasya.readingportal.services.EmailService;
+import ru.anastasya.readingportal.services.PasswordResetCodeService;
 import ru.anastasya.readingportal.services.UserService;
+import ru.anastasya.readingportal.utils.CodeGenerator;
 import ru.anastasya.readingportal.utils.JsonUtil;
 
 import java.io.BufferedReader;
@@ -27,15 +32,20 @@ public class AuthServlet extends HttpServlet {
 
     private static final UserService userService = UserService.getInstance();
     private static final ObjectMapper jsonMapper = JsonUtil.getInstance();
+    private static final PasswordResetCodeService resetCodeService = PasswordResetCodeService.getInstance();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setContentType("application/json; charset=UTF-8");
 
         String pathInfo = req.getPathInfo();
         switch (pathInfo) {
             case "/register" -> register(req, resp);
             case "/login" -> login(req, resp);
             case "/logout" -> logout(req, resp);
+            case "/forgot-password" -> forgotPassword(req, resp);
+            case "/reset-password" -> resetPassword(req, resp);
+            default -> sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_NOT_FOUND, "Ресурс не найден");
         }
 
     }
@@ -143,6 +153,48 @@ public class AuthServlet extends HttpServlet {
         resp.setStatus(HttpServletResponse.SC_OK);
         jsonMapper.writeValue(resp.getWriter(), Map.of("success", true));
 
+    }
+
+    private void forgotPassword(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json; charset=UTF-8");
+
+        PrintWriter respWriter = resp.getWriter();
+
+        ForgotPasswordDTO passwordDTO = null;
+        try {
+            passwordDTO = jsonMapper.readValue(req.getReader(), ForgotPasswordDTO.class);
+        } catch (IOException e) {
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Некорректный json");
+        }
+
+        resetCodeService.sendCode(passwordDTO.email());
+
+        resp.setStatus(HttpServletResponse.SC_OK);
+        jsonMapper.writeValue(respWriter, Map.of("success", true));
+
+    }
+
+    private void resetPassword(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json; charset=UTF-8");
+
+        PrintWriter respWriter = resp.getWriter();
+
+        ResetPasswordDTO resetPasswordDTO = null;
+
+        try {
+            resetPasswordDTO = jsonMapper.readValue(req.getReader(), ResetPasswordDTO.class);
+        } catch (IOException e) {
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Некорректный json");
+        }
+
+        try {
+            userService.changePassword(resetPasswordDTO.email(), resetPasswordDTO.code(), resetPasswordDTO.newPassword());
+        } catch (ValidationException e){
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        }
+
+        resp.setStatus(HttpServletResponse.SC_OK);
+        jsonMapper.writeValue(respWriter, Map.of("success", true));
     }
 
     private void sendJsonError(HttpServletResponse resp, PrintWriter responseWriter, int status, String message) throws IOException {

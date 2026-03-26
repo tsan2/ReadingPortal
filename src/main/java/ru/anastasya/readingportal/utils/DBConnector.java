@@ -34,7 +34,6 @@ public class DBConnector {
         }
 
         try {
-            System.out.println("Кто то взял соединение");
             return DriverManager.getConnection(dbURL, dbUsername, dbPassword);
         } catch (SQLException e) {
             throw new RuntimeException("Не удалось подключиться к базе данных", e);

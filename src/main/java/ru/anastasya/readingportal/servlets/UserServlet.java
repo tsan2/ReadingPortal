@@ -31,16 +31,19 @@ public class UserServlet extends HttpServlet {
     private final static UserService userService = UserService.getInstance();
 
     @Override
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        if (req.getMethod().equalsIgnoreCase("PATCH")){
+            doPatch(req, resp);
+        } else{
+            super.service(req, resp);
+        }
+    }
+
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String pathInfo = req.getPathInfo();
 
-        if (pathInfo.equals("/me")){
-            getProfile(req, resp);
-        }
-        else if (pathInfo.equals("/me/change-password")){
-            changePasswordByOldPassword(req, resp);
-        }
-        else if (pathInfo.isBlank() || pathInfo.equals("/")){
+        if (pathInfo == null || pathInfo.isBlank() || pathInfo.equals("/")){
             String nickname = req.getParameter("nickname");
             if (nickname==null){
                 getAllUser(req, resp);
@@ -49,28 +52,41 @@ public class UserServlet extends HttpServlet {
                 getInfoUserByNickname(req, resp, nickname);
             }
         }
-
-        try{
-            String num = pathInfo.replace("/", "");
-            Long id = Long.parseLong(num);
-            getInfoUser(req, resp, id);
-        } catch (NumberFormatException e) {
-            resp.setContentType("application/json; charset=UTF-8");
-            sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_BAD_REQUEST, "Введён некорректный id пользователя");
+        else if (pathInfo.equals("/me")){
+            getProfile(req, resp);
         }
+        else{
+            try{
+                String num = pathInfo.replace("/", "");
+                Long id = Long.parseLong(num);
+                getInfoUser(req, resp, id);
+            } catch (NumberFormatException e) {
+                resp.setContentType("application/json; charset=UTF-8");
+                sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_NOT_FOUND, "Ресурс не найден");
+            }
+
+        }
+
 
 
     }
 
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String method = req.getHeader("X-HTTP-Method");
-        if (method.equals("PATCH")){
-            String pathInfo = req.getPathInfo();
+    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-            if (pathInfo.equals("/me/nickname")){
-                changeNickname(req, resp);
-            }
+        String pathInfo = req.getPathInfo();
+
+        if (pathInfo == null){
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+        else if (pathInfo.equals("/me/change-nickname")){
+            changeNickname(req, resp);
+        }
+        else if (pathInfo.equals("/me/change-password")){
+            changePasswordByOldPassword(req, resp);
+        }
+        else {
+            resp.setContentType("application/json; charset=UTF-8");
+            sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_NOT_FOUND, "Ресурс не найден");
         }
     }
 
@@ -111,9 +127,7 @@ public class UserServlet extends HttpServlet {
             int page = Integer.parseInt(req.getParameter("page"));
             int size = Integer.parseInt(req.getParameter("size"));
 
-            System.out.println("Начинаю вызов");
             List<UserSummaryDTO> users = userService.findAllUser(page, size);
-            System.out.println("Вызов закончен");
             Map<String, List<UserSummaryDTO>> userMap = new HashMap<>();
             userMap.put("users", users);
             String json = jsonMapper.writeValueAsString(userMap);

@@ -3,8 +3,10 @@ package ru.anastasya.readingportal.services;
 import ru.anastasya.readingportal.dao.BookDAO;
 import ru.anastasya.readingportal.dao.ChapterDAO;
 import ru.anastasya.readingportal.dto.ChapterCreateDTO;
-import ru.anastasya.readingportal.exception.AuthorizationException;
+import ru.anastasya.readingportal.exception.AuthenticationException;
+import ru.anastasya.readingportal.exception.ConflictException;
 import ru.anastasya.readingportal.exception.ServiceException;
+import ru.anastasya.readingportal.exception.ValidationException;
 import ru.anastasya.readingportal.models.Chapter;
 import ru.anastasya.readingportal.models.Volume;
 import ru.anastasya.readingportal.utils.OperationResult;
@@ -43,16 +45,16 @@ public class ChapterService {
         String warningMessage = null;
 
         if (chapter.getTitle() == null || chapter.getTitle().isBlank()){
-            throw new ServiceException("Название не может быть пустым");
+            throw new ValidationException("Название не может быть пустым");
         }
         if (chapter.getTitle().length()>250){
-            throw new ServiceException("Название не может быть длиннее 250 символов");
+            throw new ValidationException("Название не может быть длиннее 250 символов");
         }
         if (chapter.getChapterMainNumber() < 0 || chapter.getChapterSubNumber() < 0){
-            throw new ServiceException("Номер главы не может быть меньше 0");
+            throw new ValidationException("Номер главы не может быть меньше 0");
         }
         if (chapterDAO.existsChapterNumber(chapter.getVolumeId(), chapter.getChapterMainNumber(), chapter.getChapterSubNumber())){
-            throw new ServiceException("Такой номер главы уже существует");
+            throw new ConflictException("Такой номер главы уже существует");
         }
 
         int maxNumber = chapterDAO.findLastMainNumberByVolumeId(chapter.getVolumeId());
@@ -67,7 +69,7 @@ public class ChapterService {
     public void addContent(Long chapterId, String content, Long currentUserId){
         checkAuthorityByChapterId(chapterId, currentUserId);
         if (content.length() > 2_000_000){
-            throw new ServiceException("Текст главы слишком длинный. Максимум 2 миллиона символов");
+            throw new ValidationException("Текст главы слишком длинный. Максимум 2 миллиона символов");
         }
 
         chapterDAO.updateContent(chapterId, content);
@@ -81,10 +83,10 @@ public class ChapterService {
         checkAuthorityByChapterId(id, currentUserId);
         Chapter chapter = chapterDAO.findInfoById(id);
         if (newTitle == null || newTitle.isBlank()){
-            throw new ServiceException("Название не может быть пустым");
+            throw new ValidationException("Название не может быть пустым");
         }
         if (chapter.getTitle().length()>250){
-            throw new ServiceException("Название не может быть длиннее 250 символов");
+            throw new ValidationException("Название не может быть длиннее 250 символов");
         }
         chapter.setTitle(newTitle);
 
@@ -98,10 +100,10 @@ public class ChapterService {
         String warningMessage = null;
 
         if (chapter.getChapterMainNumber() < 0 || chapter.getChapterSubNumber() < 0){
-            throw new ServiceException("Номер главы не может быть меньше 0");
+            throw new ValidationException("Номер главы не может быть меньше 0");
         }
         if (chapterDAO.existsChapterNumber(chapter.getVolumeId(), chapter.getChapterMainNumber(), chapter.getChapterSubNumber())){
-            throw new ServiceException("Такой номер главы уже существует");
+            throw new ConflictException("Такой номер главы уже существует");
         }
         int maxNumber = chapterDAO.findLastMainNumberByVolumeId(chapter.getVolumeId());
         if (chapter.getChapterMainNumber() > maxNumber + 1){
@@ -138,7 +140,7 @@ public class ChapterService {
         Long bookId = volumeService.findById(volumeId).getBookId();
 
         if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthorizationException("У вас нет прав");
+            throw new AuthenticationException("У вас нет прав");
         }
     }
 
@@ -146,7 +148,7 @@ public class ChapterService {
         Long bookId = volumeService.findById(volumeId).getBookId();
 
         if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthorizationException("У вас нет прав");
+            throw new AuthenticationException("У вас нет прав");
         }
     }
 }

@@ -2,8 +2,10 @@ package ru.anastasya.readingportal.services;
 
 import ru.anastasya.readingportal.dao.BookDAO;
 import ru.anastasya.readingportal.dao.VolumeDAO;
-import ru.anastasya.readingportal.exception.AuthorizationException;
+import ru.anastasya.readingportal.exception.AuthenticationException;
+import ru.anastasya.readingportal.exception.ConflictException;
 import ru.anastasya.readingportal.exception.ServiceException;
+import ru.anastasya.readingportal.exception.ValidationException;
 import ru.anastasya.readingportal.models.Volume;
 import ru.anastasya.readingportal.utils.OperationResult;
 
@@ -32,13 +34,13 @@ public class VolumeService {
         Long id = null;
 
         if (volume.getTitle() == null || volume.getTitle().isBlank()){
-            throw new ServiceException("Название не может быть пустым");
+            throw new ValidationException("Название не может быть пустым");
         }
         if (volume.getTitle().length()>250){
-            throw new ServiceException("Название не может быть длиннее 250 символов");
+            throw new ValidationException("Название не может быть длиннее 250 символов");
         }
         if (volume.getVolumeMainNumber() < 0 || volume.getVolumeSubNumber() < 0){
-            throw new ServiceException("Номер тома не может быть меньше 0");
+            throw new ValidationException("Номер тома не может быть меньше 0");
         }
         int maxNumber = volumeDAO.findLastMainNumberByBookId(volume.getBookId());
         if (volume.getVolumeMainNumber() > maxNumber + 1){
@@ -54,7 +56,7 @@ public class VolumeService {
         }
         else{
             if (volumeDAO.existsVolumeNumber(volume.getBookId(), volume.getVolumeMainNumber(), volume.getVolumeSubNumber())){
-                throw new ServiceException("Такой номер тома уже существует");
+                throw new ConflictException("Такой номер тома уже существует");
             }
             id = volumeDAO.save(volume);
         }
@@ -75,10 +77,10 @@ public class VolumeService {
 
         Volume volume = volumeDAO.findById(id);
         if (newTitle == null || newTitle.isBlank()){
-            throw new ServiceException("Название не может быть пустым");
+            throw new ValidationException("Название не может быть пустым");
         }
         if (volume.getTitle().length()>250){
-            throw new ServiceException("Название не может быть длиннее 250 символов");
+            throw new ValidationException("Название не может быть длиннее 250 символов");
         }
         volume.setTitle(newTitle);
 
@@ -92,10 +94,10 @@ public class VolumeService {
         String warningMessage = null;
 
         if (volume.getVolumeMainNumber() < 0 || volume.getVolumeSubNumber() < 0){
-            throw new ServiceException("Номер тома не может быть меньше 0");
+            throw new ValidationException("Номер тома не может быть меньше 0");
         }
         if (volumeDAO.existsVolumeNumber(volume.getBookId(), volume.getVolumeMainNumber(), volume.getVolumeSubNumber())){
-            throw new ServiceException("Такой номер тома уже существует");
+            throw new ValidationException("Такой номер тома уже существует");
         }
         int maxNumber = volumeDAO.findLastMainNumberByBookId(volume.getBookId());
         if (volume.getVolumeMainNumber() > maxNumber + 1){
@@ -148,13 +150,13 @@ public class VolumeService {
         Long bookId = volumeDAO.findById(volumeId).getBookId();
 
         if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthorizationException("У вас нет прав");
+            throw new AuthenticationException("У вас нет прав");
         }
     }
 
     private void checkAuthorityByBookId(Long bookId, Long userId){
         if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthorizationException("У вас нет прав");
+            throw new AuthenticationException("У вас нет прав");
         }
     }
 

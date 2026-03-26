@@ -2,8 +2,7 @@ package ru.anastasya.readingportal.services;
 
 import ru.anastasya.readingportal.dao.*;
 import ru.anastasya.readingportal.dto.BookFilter;
-import ru.anastasya.readingportal.exception.AuthorizationException;
-import ru.anastasya.readingportal.exception.ServiceException;
+import ru.anastasya.readingportal.exception.*;
 import ru.anastasya.readingportal.models.*;
 
 import java.util.HashMap;
@@ -31,10 +30,10 @@ public class BookService {
         Objects.requireNonNull(book, "нельзя создать null book");
 
         if (book.getTitle() == null || book.getTitle().isBlank()){
-            throw new ServiceException("Название не может быть пустым");
+            throw new ValidationException("Название не может быть пустым");
         }
         if (book.getTitle().length()>250){
-            throw new ServiceException("Название не может быть длиннее 250 символов");
+            throw new ValidationException("Название не может быть длиннее 250 символов");
         }
 
         Long bookId = bookDAO.save(book);
@@ -50,15 +49,15 @@ public class BookService {
         checkAuthority(bookId, currentUserId);
 
         if (newTitle == null || newTitle.isBlank()){
-            throw new ServiceException("Название не может быть пустым");
+            throw new ValidationException("Название не может быть пустым");
         }
         if (newTitle.length()>250){
-            throw new ServiceException("Название не может быть длиннее 250 символов");
+            throw new ValidationException("Название не может быть длиннее 250 символов");
         }
 
         Book book = bookDAO.findById(bookId);
         if (book == null){
-            throw new ServiceException("Книга не найдена");
+            throw new EntityNotFoundException("Книга не найдена");
         }
         book.setTitle(newTitle);
 
@@ -68,13 +67,13 @@ public class BookService {
     public void addAuthorToBook(Long bookId, Long authorId, Long currentUserId){
         checkAuthority(bookId, currentUserId);
         if (!bookDAO.exists(bookId)){
-            throw new ServiceException("Такой книги не существует");
+            throw new EntityNotFoundException("Такой книги не существует");
         }
         if (!userDAO.exists(authorId)){
-            throw new ServiceException("Такого пользователя не существует");
+            throw new EntityNotFoundException("Такого пользователя не существует");
         }
         if (bookDAO.isUserAuthorOfBook(bookId, authorId)){
-            throw new ServiceException("К книге уже добавлен этот автор");
+            throw new ConflictException("К книге уже добавлен этот автор");
         }
         bookDAO.addAuthorToBook(bookId, authorId);
     }
@@ -82,13 +81,13 @@ public class BookService {
     public void addGenreToBook(Long bookId, Long genreId, Long currentUserId){
         checkAuthority(bookId, currentUserId);
         if (!bookDAO.exists(bookId)){
-            throw new ServiceException("Такой книги не существует");
+            throw new EntityNotFoundException("Такой книги не существует");
         }
         if (!genreDAO.exists(genreId)){
-            throw new ServiceException("Такого жанра не существует");
+            throw new EntityNotFoundException("Такого жанра не существует");
         }
         if (bookDAO.isGenreAdded(bookId, genreId)){
-            throw new ServiceException("К книге уже добавлен этот жанр");
+            throw new ConflictException("К книге уже добавлен этот жанр");
         }
         bookDAO.addGenreToBook(bookId, genreId);
     }
@@ -96,7 +95,7 @@ public class BookService {
     public void deleteAuthorFromBook(Long bookId, Long authorId, Long currentUserId){
         checkAuthority(bookId, currentUserId);
         if (!bookDAO.isUserAuthorOfBook(bookId, authorId)){
-            throw new ServiceException("К книге не добавлен этот автор");
+            throw new ConflictException("К книге не добавлен этот автор");
         }
         bookDAO.deleteAuthorFromBook(bookId, authorId);
     }
@@ -104,7 +103,7 @@ public class BookService {
     public void deleteGenreFromBook(Long bookId, Long genreId, Long currentUserId){
         checkAuthority(bookId, currentUserId);
         if (bookDAO.isGenreAdded(bookId, genreId)){
-            throw new ServiceException("К книге не добавлен этот жанр");
+            throw new ConflictException("К книге не добавлен этот жанр");
         }
         bookDAO.deleteGenreFromBook(bookId, genreId);
     }
@@ -157,7 +156,7 @@ public class BookService {
 
     private void checkAuthority(Long bookId, Long userId){
         if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthorizationException("У вас нет прав");
+            throw new AuthenticationException("У вас нет прав");
         }
     }
 }

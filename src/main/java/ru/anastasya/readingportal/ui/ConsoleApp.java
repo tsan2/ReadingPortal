@@ -1,20 +1,5 @@
 package ru.anastasya.readingportal.ui;
 
-import ru.anastasya.readingportal.dao.*;
-import ru.anastasya.readingportal.dto.BookFilter;
-import ru.anastasya.readingportal.dto.BookSortStrategy;
-import ru.anastasya.readingportal.dto.ChapterCreateDTO;
-import ru.anastasya.readingportal.dto.FractionalNumber;
-import ru.anastasya.readingportal.exception.AuthorizationException;
-import ru.anastasya.readingportal.exception.ServiceException;
-import ru.anastasya.readingportal.models.*;
-import ru.anastasya.readingportal.services.*;
-import ru.anastasya.readingportal.utils.OperationResult;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Scanner;
-
 public class ConsoleApp {
 
 //    public static void main(String[] args){

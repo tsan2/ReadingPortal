@@ -9,9 +9,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import ru.anastasya.readingportal.dto.ProfileDTO;
-import ru.anastasya.readingportal.dto.UserPublicInfoDTO;
-import ru.anastasya.readingportal.dto.UserSummaryDTO;
+import ru.anastasya.readingportal.dto.*;
+import ru.anastasya.readingportal.exception.ConflictException;
+import ru.anastasya.readingportal.exception.EntityNotFoundException;
+import ru.anastasya.readingportal.exception.ServiceException;
+import ru.anastasya.readingportal.exception.ValidationException;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.services.UserService;
 import ru.anastasya.readingportal.utils.JsonUtil;
@@ -35,8 +37,17 @@ public class UserServlet extends HttpServlet {
         if (pathInfo.equals("/me")){
             getProfile(req, resp);
         }
+        else if (pathInfo.equals("/me/change-password")){
+            changePasswordByOldPassword(req, resp);
+        }
         else if (pathInfo.isBlank() || pathInfo.equals("/")){
-            getAllUser(req, resp);
+            String nickname = req.getParameter("nickname");
+            if (nickname==null){
+                getAllUser(req, resp);
+            }
+            else{
+                getInfoUserByNickname(req, resp, nickname);
+            }
         }
 
         try{
@@ -49,6 +60,47 @@ public class UserServlet extends HttpServlet {
         }
 
 
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String method = req.getHeader("X-HTTP-Method");
+        if (method.equals("PATCH")){
+            String pathInfo = req.getPathInfo();
+
+            if (pathInfo.equals("/me/nickname")){
+                changeNickname(req, resp);
+            }
+        }
+    }
+
+    private void changePasswordByOldPassword(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json; charset=UTF-8");
+
+        PrintWriter respWriter = resp.getWriter();
+
+        HttpSession session = req.getSession();
+        User user = (User) session.getAttribute("current_user");
+        if (user==null){
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, "Необходимо авторизоваться");
+            return;
+        }
+
+        ChangePasswordByOldPasswordDTO passwordDTO = null;
+        try{
+            passwordDTO = jsonMapper.readValue(req.getReader(), ChangePasswordByOldPasswordDTO.class);
+        } catch (IOException e) {
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
+            return;
+        }
+
+        try {
+            userService.changePassword(user.getId(),  passwordDTO.oldPassword(), passwordDTO.newPassword());
+            resp.setStatus(HttpServletResponse.SC_OK);
+            respWriter.println(jsonMapper.writeValueAsString(Map.of("success", true)));
+        } catch (ValidationException e){
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        }
     }
 
     private void getAllUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -65,8 +117,48 @@ public class UserServlet extends HttpServlet {
             Map<String, List<UserSummaryDTO>> userMap = new HashMap<>();
             userMap.put("users", users);
             String json = jsonMapper.writeValueAsString(userMap);
+            resp.setStatus(HttpServletResponse.SC_OK);
             respWriter.println(json);
         }
+
+    }
+
+    private void changeNickname(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("application/json; charset=UTF-8");
+
+        PrintWriter respWriter = resp.getWriter();
+
+        HttpSession session = req.getSession();
+        User user = (User) session.getAttribute("current_user");
+
+        if (user==null){
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, "Авторизуйтесь, чтобы сменить никнейм");
+            return;
+        }
+
+        ChangeNicknameDTO nicknameDTO = null;
+        try{
+            nicknameDTO = jsonMapper.readValue(req.getReader(), ChangeNicknameDTO.class);
+        } catch (IOException e) {
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
+            return;
+        }
+
+        try{
+            userService.changeNickname(user.getId(), nicknameDTO.nickname());
+            user.setNickname(nicknameDTO.nickname());
+            session.setAttribute("current_user", user);
+
+            resp.setStatus(HttpServletResponse.SC_OK);
+            respWriter.println(jsonMapper.writeValueAsString(Map.of("success", true)));
+
+        } catch (EntityNotFoundException e){
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+        } catch (ConflictException e){
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_CONFLICT, e.getMessage());
+        }
+
+
 
     }
 
@@ -83,8 +175,25 @@ public class UserServlet extends HttpServlet {
             ProfileDTO userProfile = new ProfileDTO(user.getId(), user.getNickname(), user.getEmail(), user.getCreatedAt());
             String json = jsonMapper.writeValueAsString(userProfile);
 
-            respWriter.println(json);
             resp.setStatus(HttpServletResponse.SC_OK);
+            respWriter.println(json);
+        }
+    }
+
+    private void getInfoUserByNickname(HttpServletRequest req, HttpServletResponse resp, String nickname) throws IOException {
+        resp.setContentType("application/json; charset=UTF-8");
+
+        try(PrintWriter respWriter = resp.getWriter()) {
+            User user = userService.findUserByNickname(nickname);
+            if (user == null){
+                sendJsonError(resp, respWriter, HttpServletResponse.SC_NOT_FOUND, "Пользователь не найден");
+                return;
+            }
+            UserPublicInfoDTO userInfo = new UserPublicInfoDTO(user.getId(), user.getNickname(), user.getCreatedAt());
+
+            String json = jsonMapper.writeValueAsString(userInfo);
+            resp.setStatus(HttpServletResponse.SC_OK);
+            respWriter.println(json);
         }
     }
 
@@ -97,11 +206,11 @@ public class UserServlet extends HttpServlet {
                 sendJsonError(resp, respWriter, HttpServletResponse.SC_NOT_FOUND, "Пользователь не найден");
                 return;
             }
-            UserPublicInfoDTO userInfo = new UserPublicInfoDTO(user.getId(), user.getNickname(), user.getEmail(), user.getCreatedAt());
+            UserPublicInfoDTO userInfo = new UserPublicInfoDTO(user.getId(), user.getNickname(), user.getCreatedAt());
 
             String json = jsonMapper.writeValueAsString(userInfo);
-            respWriter.println(json);
             resp.setStatus(HttpServletResponse.SC_OK);
+            respWriter.println(json);
         }
     }
 

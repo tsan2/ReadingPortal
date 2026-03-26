@@ -1,7 +1,6 @@
 package ru.anastasya.readingportal.servlets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -10,9 +9,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import ru.anastasya.readingportal.dto.UserLoginDTO;
 import ru.anastasya.readingportal.dto.UserRegisterDTO;
-import ru.anastasya.readingportal.exception.AuthorizationException;
+import ru.anastasya.readingportal.exception.AuthenticationException;
+import ru.anastasya.readingportal.exception.ConflictException;
 import ru.anastasya.readingportal.exception.RegistrationException;
-import ru.anastasya.readingportal.exception.ServiceException;
+import ru.anastasya.readingportal.exception.ValidationException;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.services.UserService;
 import ru.anastasya.readingportal.utils.JsonUtil;
@@ -80,9 +80,12 @@ public class AuthServlet extends HttpServlet {
         User user = new User(userDTO.nickname(), userDTO.email(), userDTO.password());
         try {
             userService.registerUser(user);
+
             resp.setStatus(HttpServletResponse.SC_CREATED);
             jsonMapper.writeValue(respWriter, Map.of("success", true));
-        } catch (RegistrationException e){
+        } catch (ValidationException e){
+            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        } catch (ConflictException e){
             sendJsonError(resp, respWriter, HttpServletResponse.SC_CONFLICT, e.getMessage());
         }
 
@@ -121,8 +124,9 @@ public class AuthServlet extends HttpServlet {
             req.changeSessionId();
             session.setAttribute("current_user", user);
 
+            resp.setStatus(HttpServletResponse.SC_OK);
             jsonMapper.writeValue(respWriter, Map.of("current_id", user.getId()));
-        } catch (AuthorizationException e){
+        } catch (AuthenticationException e){
             sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
         }
 
@@ -135,6 +139,7 @@ public class AuthServlet extends HttpServlet {
         if(session != null){
             session.invalidate();
         }
+
         resp.setStatus(HttpServletResponse.SC_OK);
         jsonMapper.writeValue(resp.getWriter(), Map.of("success", true));
 

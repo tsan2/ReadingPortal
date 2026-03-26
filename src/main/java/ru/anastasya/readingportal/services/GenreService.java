@@ -2,6 +2,7 @@ package ru.anastasya.readingportal.services;
 
 import ru.anastasya.readingportal.dao.GenreDAO;
 import ru.anastasya.readingportal.exception.ServiceException;
+import ru.anastasya.readingportal.exception.ValidationException;
 import ru.anastasya.readingportal.models.Genre;
 
 import java.util.List;
@@ -23,10 +24,10 @@ public class GenreService {
     public void createGenre(Genre genre){
         Objects.requireNonNull(genre, "Нельзя создать null genre");
         if (genre.getName() == null || genre.getName().isBlank()){
-            throw new ServiceException("Имя не может быть пустым");
+            throw new ValidationException("Имя не может быть пустым");
         }
         if (genre.getName().length() > 100){
-            throw new ServiceException("Имя слишком большое. Максимальная длина 100 символов");
+            throw new ValidationException("Имя слишком большое. Максимальная длина 100 символов");
         }
 
         genreDAO.save(genre);

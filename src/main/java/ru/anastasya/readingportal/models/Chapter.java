@@ -54,9 +54,9 @@ public class Chapter {
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
-                ", chapter_main_number=" + chapterMainNumber +
-                ", chapter_sub_number=" + chapterSubNumber +
-                ", volume_id=" + volumeId +
+                ", chapterMainNumber=" + chapterMainNumber +
+                ", chapterSubNumber=" + chapterSubNumber +
+                ", volumeId=" + volumeId +
                 '}';
     }
 

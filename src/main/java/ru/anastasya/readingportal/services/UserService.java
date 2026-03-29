@@ -144,8 +144,12 @@ public class UserService {
         return userDAO.findById(id);
     }
 
-    public User findUserByNickname(String Nickname){
-        return userDAO.findByNickname(Nickname);
+    public User findUserByNickname(String nickname){
+        return userDAO.findByNickname(nickname);
+    }
+
+    public User findUserByTokenHash(String tokenHash){
+        return userDAO.findUserByTokenHash(tokenHash);
     }
 
     public void deleteUser(Long id, boolean deleteBookOrNo){

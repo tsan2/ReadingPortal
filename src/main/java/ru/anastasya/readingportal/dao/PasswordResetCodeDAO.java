@@ -27,7 +27,7 @@ public class PasswordResetCodeDAO {
 
 
     public void saveCode(PasswordResetCode resetCode){
-        CRUDutil.insert(SAVE_CODE_SQL, resetCode.getUser_id(), resetCode.getCode(), resetCode.getExpires_at());
+        CRUDutil.insert(SAVE_CODE_SQL, resetCode.getUserId(), resetCode.getCode(), resetCode.getExpiresAt());
     }
 
     public PasswordResetCode findValidCode(Long idUser, String code){

@@ -49,13 +49,13 @@ public class VolumeDAO {
     public Long save(Volume volume){
         Objects.requireNonNull(volume, "Нельзя сохранить null volume");
         return CRUDutil.insert(SAVE_VOLUME_SQL, volume.getTitle(), volume.getVolumeMainNumber(),
-                volume.getVolumeSubNumber(), volume.getBookId(), volume.isIs_default());
+                volume.getVolumeSubNumber(), volume.getBookId(), volume.isDefault());
     }
 
     public void update(Volume volume){
         Objects.requireNonNull(volume, "Нельзя изменить null volume");
         CRUDutil.update(UPDATE_VOLUME_SQL, volume.getTitle(), volume.getVolumeMainNumber(),
-                volume.getVolumeSubNumber(), volume.isIs_default(), volume.getId());
+                volume.getVolumeSubNumber(), volume.isDefault(), volume.getId());
     }
 
     public void delete(Long volumeId){

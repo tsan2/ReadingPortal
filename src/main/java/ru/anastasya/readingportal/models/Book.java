@@ -58,8 +58,8 @@ public class Book {
         return "Book{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", date_changed=" + dateChanged +
-                ", created_at=" + createdAt +
+                ", dateChanged=" + dateChanged +
+                ", createdAt=" + createdAt +
                 ", genres=" + genres +
                 ", authors=" + authors +
                 '}';

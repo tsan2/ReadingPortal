@@ -7,7 +7,7 @@ public class Volume {
     private int volumeMainNumber;
     private int volumeSubNumber;
     private Long bookId;
-    private boolean is_default;
+    private boolean isDefault;
 
     public Volume() {
 
@@ -21,22 +21,22 @@ public class Volume {
         this.bookId = bookId;
     }
 
-    public Volume(String title, int volumeMainNumber, int volumeSubNumber, Long bookId, boolean is_default) {
+    public Volume(String title, int volumeMainNumber, int volumeSubNumber, Long bookId, boolean isDefault) {
         this.id = null;
         this.title = title;
         this.volumeMainNumber = volumeMainNumber;
         this.volumeSubNumber = volumeSubNumber;
         this.bookId = bookId;
-        this.is_default = is_default;
+        this.isDefault = isDefault;
     }
 
-    public Volume(Long id, String title, int volumeMainNumber, int volumeSubNumber, Long bookId, boolean is_default) {
+    public Volume(Long id, String title, int volumeMainNumber, int volumeSubNumber, Long bookId, boolean isDefault) {
         this.id = id;
         this.title = title;
         this.volumeMainNumber = volumeMainNumber;
         this.volumeSubNumber = volumeSubNumber;
         this.bookId = bookId;
-        this.is_default = is_default;
+        this.isDefault = isDefault;
     }
 
     @Override
@@ -44,9 +44,9 @@ public class Volume {
         return "Volume{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", volume_main_number=" + volumeMainNumber +
-                ", volume_sub_number=" + volumeSubNumber +
-                ", book_id=" + bookId +
+                ", volumeMainNumber=" + volumeMainNumber +
+                ", volumeSubNumber=" + volumeSubNumber +
+                ", bookId=" + bookId +
                 '}';
     }
 
@@ -90,11 +90,11 @@ public class Volume {
         this.bookId = bookId;
     }
 
-    public boolean isIs_default() {
-        return is_default;
+    public boolean isDefault() {
+        return isDefault;
     }
 
-    public void setIs_default(boolean is_default) {
-        this.is_default = is_default;
+    public void setDefault(boolean aDefault) {
+        this.isDefault = aDefault;
     }
 }

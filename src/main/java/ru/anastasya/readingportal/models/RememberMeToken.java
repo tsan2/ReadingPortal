@@ -2,35 +2,38 @@ package ru.anastasya.readingportal.models;
 
 import java.time.LocalDateTime;
 
-public class PasswordResetCode {
+public class RememberMeToken {
 
     private Long id;
     private Long userId;
-    private String code;
+    private String token_hash;
     private LocalDateTime expiresAt;
     private LocalDateTime createdAt;
 
-    public PasswordResetCode(Long userId, String code, LocalDateTime expiresAt) {
-        this.id = null;
+    public RememberMeToken() {
+
+    }
+
+    public RememberMeToken(Long userId, String token_hash, LocalDateTime expiresAt) {
         this.userId = userId;
-        this.code = code;
+        this.token_hash = token_hash;
         this.expiresAt = expiresAt;
     }
 
-    public PasswordResetCode(Long id, Long userId, String code, LocalDateTime expiresAt, LocalDateTime createdAt) {
+    public RememberMeToken(Long id, Long userId, String token_hash, LocalDateTime expiresAt, LocalDateTime createdAt) {
         this.id = id;
         this.userId = userId;
-        this.code = code;
+        this.token_hash = token_hash;
         this.expiresAt = expiresAt;
         this.createdAt = createdAt;
     }
 
     @Override
     public String toString() {
-        return "PasswordResetCode{" +
+        return "RememberMeToken{" +
                 "id=" + id +
                 ", userId=" + userId +
-                ", code='" + code + '\'' +
+                ", token_hash='" + token_hash + '\'' +
                 ", expiresAt=" + expiresAt +
                 ", createdAt=" + createdAt +
                 '}';
@@ -52,12 +55,12 @@ public class PasswordResetCode {
         this.userId = userId;
     }
 
-    public String getCode() {
-        return code;
+    public String getToken_hash() {
+        return token_hash;
     }
 
-    public void setCode(String code) {
-        this.code = code;
+    public void setToken_hash(String token_hash) {
+        this.token_hash = token_hash;
     }
 
     public LocalDateTime getExpiresAt() {

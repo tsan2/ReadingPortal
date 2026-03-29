@@ -51,8 +51,8 @@ public class User implements Serializable {
                 "id=" + id +
                 ", nickname='" + nickname + '\'' +
                 ", email='" + email + '\'' +
-                ", password_hash='" + passwordHash + '\'' +
-                ", created_at=" + createdAt +
+                ", passwordHash='" + passwordHash + '\'' +
+                ", createdAt=" + createdAt +
                 '}';
     }
 

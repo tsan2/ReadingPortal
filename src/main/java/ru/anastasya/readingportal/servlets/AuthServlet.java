@@ -3,29 +3,29 @@ package ru.anastasya.readingportal.servlets;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.*;
 import ru.anastasya.readingportal.dto.ForgotPasswordDTO;
 import ru.anastasya.readingportal.dto.ResetPasswordDTO;
 import ru.anastasya.readingportal.dto.UserLoginDTO;
 import ru.anastasya.readingportal.dto.UserRegisterDTO;
 import ru.anastasya.readingportal.exception.AuthenticationException;
 import ru.anastasya.readingportal.exception.ConflictException;
-import ru.anastasya.readingportal.exception.RegistrationException;
 import ru.anastasya.readingportal.exception.ValidationException;
+import ru.anastasya.readingportal.models.RememberMeToken;
 import ru.anastasya.readingportal.models.User;
-import ru.anastasya.readingportal.services.EmailService;
 import ru.anastasya.readingportal.services.PasswordResetCodeService;
+import ru.anastasya.readingportal.services.RememberMeTokenService;
 import ru.anastasya.readingportal.services.UserService;
-import ru.anastasya.readingportal.utils.CodeGenerator;
+import ru.anastasya.readingportal.utils.PasswordUtil;
 import ru.anastasya.readingportal.utils.JsonUtil;
+import ru.anastasya.readingportal.utils.TokenUtil;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @WebServlet("/auth/*")
 public class AuthServlet extends HttpServlet {
@@ -33,6 +33,7 @@ public class AuthServlet extends HttpServlet {
     private static final UserService userService = UserService.getInstance();
     private static final ObjectMapper jsonMapper = JsonUtil.getInstance();
     private static final PasswordResetCodeService resetCodeService = PasswordResetCodeService.getInstance();
+    private static final RememberMeTokenService rememberMeTokenService = RememberMeTokenService.getInstance();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -110,6 +111,13 @@ public class AuthServlet extends HttpServlet {
 
         PrintWriter respWriter = resp.getWriter();
 
+        User currentUser = (User) session.getAttribute("current_user");
+        if (currentUser != null){
+            resp.setStatus(HttpServletResponse.SC_OK);
+            jsonMapper.writeValue(respWriter, Map.of("current_id", currentUser.getId()));
+            return;
+        }
+
         BufferedReader reqReader = req.getReader();
         UserLoginDTO userLoginDTO = null;
         try {
@@ -134,6 +142,25 @@ public class AuthServlet extends HttpServlet {
             req.changeSessionId();
             session.setAttribute("current_user", user);
 
+            if (userLoginDTO.rememberMe()){
+                String token = UUID.randomUUID().toString();
+                String tokenHash = TokenUtil.hashToken(token);
+
+                int lifeSeconds = 60*60*24*30;
+
+                RememberMeToken rememberMeToken = new RememberMeToken(user.getId(),
+                        tokenHash, LocalDateTime.now().plusSeconds(lifeSeconds));
+
+                rememberMeTokenService.createRememberMeToken(rememberMeToken);
+
+                Cookie cookie = new Cookie("REMEMBER_ME", token);
+                cookie.setMaxAge(lifeSeconds);
+                cookie.setHttpOnly(true);
+                cookie.setPath("/");
+
+                resp.addCookie(cookie);
+            }
+
             resp.setStatus(HttpServletResponse.SC_OK);
             jsonMapper.writeValue(respWriter, Map.of("current_id", user.getId()));
         } catch (AuthenticationException e){
@@ -146,9 +173,21 @@ public class AuthServlet extends HttpServlet {
         resp.setContentType("application/json; charset=UTF-8");
 
         HttpSession session = req.getSession(false);
+
+        User user = null;
+
         if(session != null){
+            user = (User) session.getAttribute("current_user");
             session.invalidate();
         }
+        if (user != null){
+            rememberMeTokenService.deleteAllRememberMeTokenByUserId(user.getId());
+
+            Cookie cookie = new Cookie("REMEMBER_ME", null);
+            cookie.setMaxAge(0);
+            resp.addCookie(cookie);
+        }
+
 
         resp.setStatus(HttpServletResponse.SC_OK);
         jsonMapper.writeValue(resp.getWriter(), Map.of("success", true));
@@ -165,6 +204,7 @@ public class AuthServlet extends HttpServlet {
             passwordDTO = jsonMapper.readValue(req.getReader(), ForgotPasswordDTO.class);
         } catch (IOException e) {
             sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Некорректный json");
+            return;
         }
 
         resetCodeService.sendCode(passwordDTO.email());

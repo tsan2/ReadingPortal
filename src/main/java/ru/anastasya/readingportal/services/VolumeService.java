@@ -4,7 +4,6 @@ import ru.anastasya.readingportal.dao.BookDAO;
 import ru.anastasya.readingportal.dao.VolumeDAO;
 import ru.anastasya.readingportal.exception.AuthenticationException;
 import ru.anastasya.readingportal.exception.ConflictException;
-import ru.anastasya.readingportal.exception.ServiceException;
 import ru.anastasya.readingportal.exception.ValidationException;
 import ru.anastasya.readingportal.models.Volume;
 import ru.anastasya.readingportal.utils.OperationResult;
@@ -47,7 +46,7 @@ public class VolumeService {
             warningMessage = "Вы пропускаете номер тома. Последний номер сейчас: " + maxNumber;
         }
 
-        volume.setIs_default(false);
+        volume.setDefault(false);
 
         if (volumeDAO.getNotDefaultVolumeCountByBookId(volume.getBookId())==0){
             Volume defaultVolume = findDefaultVolume(volume.getBookId());
@@ -137,7 +136,7 @@ public class VolumeService {
     public void deleteDefaultVolume(Long bookId, Long currentUserId){
         checkAuthorityByBookId(bookId, currentUserId);
         Volume volume = volumeDAO.findById(bookId);
-        if (volume.isIs_default()){
+        if (volume.isDefault()){
             volumeDAO.delete(bookId);
         }
     }

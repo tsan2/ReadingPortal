@@ -48,6 +48,11 @@ public class UserDAO{
     private static final String FIND_FULL_USER_BY_ID_SQL = """
             SELECT id, nickname, email, password_hash, created_at
             FROM users WHERE id=?;""";
+    private static final String FIND_USER_BY_TOKEN_HASH_SQL = """
+            SELECT u.id, u.nickname, u.email, u.created_at FROM users u
+            JOIN remember_me_tokens rmt
+            ON u.id = rmt.user_id
+            WHERE rmt.token_hash = ? AND expires_at > CURRENT_TIMESTAMP;""";
     private static final String EXISTS_EMAIL_SQL = "SELECT COUNT(id) FROM users WHERE email=?;";
     private static final String EXISTS_NICKNAME_SQL = "SELECT COUNT(id) FROM users WHERE nickname=?;";
     private static final String EXISTS_USER_SQL = "SELECT COUNT(*) FROM users WHERE id = ?;";
@@ -72,6 +77,11 @@ public class UserDAO{
     public List<User> findByBookId(Long id){
         List<User> users = CRUDutil.readMany(FIND_USER_BY_BOOK_ID_SQL, this::publicMap, id);
         return users;
+    }
+
+    public User findUserByTokenHash(String tokenHash){
+        User user = CRUDutil.readOne(FIND_USER_BY_TOKEN_HASH_SQL, this::publicMap, tokenHash);
+        return user;
     }
 
     public void save(User user){

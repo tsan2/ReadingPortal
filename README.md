@@ -18,7 +18,8 @@ json
 json
 {
     "emailOrNickname" : "oleg",
-    "password" : "my_password"
+    "password" : "my_password",
+    "rememberMe" : true
 }
 
 3.Выход из аккаунта

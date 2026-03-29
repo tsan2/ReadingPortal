@@ -50,6 +50,11 @@ public class BookDAO {
     private static final String DELETE_GENRE_FROM_BOOK_SQL = "DELETE FROM books_genres WHERE book_id = ? and genre_id = ?;";
     private static final String DELETE_ALL_GENRES_FROM_BOOK_SQL = "DELETE FROM books_genres WHERE book_id = ?;";
     private static final String DELETE_BOOK_SQL = "DELETE FROM books WHERE id = ?;";
+    private static final String DELETE_ALL_BOOK_BY_USER_ID = """
+            DELETE FROM books b WHERE id IN
+            (SELECT book_id FROM books_authors
+            WHERE user_id = ?)
+            """;
     private static final String EXISTS_BOOK_SQL = "SELECT COUNT(*) FROM books WHERE id = ?;";
     private static final String IS_GENRE_ADDED_SQL = "SELECT COUNT(*) FROM books_genres WHERE book_id = ? and genre_id = ?;";
     private static final String IS_USER_AUTHOR_OF_BOOK_SQL = "SELECT COUNT(*) FROM books_authors WHERE book_id = ? and user_id = ?;";
@@ -95,6 +100,10 @@ public class BookDAO {
         CRUDutil.update(DELETE_ALL_GENRES_FROM_BOOK_SQL, bookId);
     }
 
+    public void deleteAllBooksByUserId(Long userId){
+        CRUDutil.update(DELETE_ALL_BOOK_BY_USER_ID, userId);
+    }
+
     public Book findById(Long id){
         return CRUDutil.readOne(FIND_BOOK_BY_ID_SQL, this::Map, id);
     }
@@ -105,19 +114,58 @@ public class BookDAO {
                 FROM books b
                 WHERE 1=1""");
         List<Object> params = new ArrayList<>();
-        if (bookFilter.getAuthorId() != null) {
-            sql.append(" AND id IN (SELECT book_id FROM books_authors WHERE user_id = ?)");
-            params.add(bookFilter.getAuthorId());
-        }
-        if (bookFilter.getGenreId() != null) {
-            sql.append(" AND id IN (SELECT book_id FROM books_genres WHERE genre_id = ?)");
-            params.add(bookFilter.getGenreId());
-        }
+
+        formSqlAndParams(bookFilter, sql, params);
+
         if (bookFilter.getBookSortStrategy() != null) {
-            sql.append(" " + bookFilter.getBookSortStrategy().getSql());
+            sql.append(" ");
+            sql.append(bookFilter.getBookSortStrategy().getSql());
         }
 
+        int limit = bookFilter.getSize();
+        int offset = limit * (bookFilter.getPage()-1);
+
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
         return CRUDutil.readMany(sql.toString(), this::Map, params.toArray());
+    }
+
+    public long countBooksByBookFilter(BookFilter bookFilter){
+        StringBuilder sql = new StringBuilder("""
+                SELECT COUNT(*)
+                FROM books b
+                WHERE 1=1""");
+        List<Object> params = new ArrayList<>();
+
+        formSqlAndParams(bookFilter, sql, params);
+
+        return CRUDutil.readOne(sql.toString(), rs -> rs.getLong(1), params.toArray());
+    }
+
+    private void formSqlAndParams(BookFilter bookFilter, StringBuilder sql, List<Object> params){
+        List<Long> authorsId = bookFilter.getAuthorsIds();
+        List<Long> genresId = bookFilter.getGenresIds();
+        if (authorsId != null && !authorsId.isEmpty()) {
+            sql.append(" AND id IN (SELECT book_id FROM books_authors WHERE user_id IN (");
+            for (int i = 0; i<authorsId.size()-1; i++){
+                sql.append("?, ");
+                params.add(authorsId.get(i));
+            }
+            sql.append("?))");
+            params.add(authorsId.getLast());
+
+        }
+        if (genresId != null && !genresId.isEmpty()) {
+            sql.append(" AND id IN (SELECT book_id FROM books_genres WHERE genre_id IN (");
+            for (int i = 0; i<genresId.size()-1; i++){
+                sql.append("?, ");
+                params.add(genresId.get(i));
+            }
+            sql.append("?))");
+            params.add(genresId.getLast());
+        }
     }
 
     public boolean exists(Long id){

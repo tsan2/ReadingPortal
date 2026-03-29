@@ -46,7 +46,7 @@ public class AuthServlet extends HttpServlet {
             case "/logout" -> logout(req, resp);
             case "/forgot-password" -> forgotPassword(req, resp);
             case "/reset-password" -> resetPassword(req, resp);
-            default -> sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_NOT_FOUND, "Ресурс не найден");
+            default -> JsonUtil.sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_NOT_FOUND, "Ресурс не найден");
         }
 
     }
@@ -62,28 +62,28 @@ public class AuthServlet extends HttpServlet {
         try{
             userDTO = jsonMapper.readValue(reader, UserRegisterDTO.class);
         } catch (IOException e) {
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
             return;
         }
 
         if (userDTO.nickname() == null || userDTO.nickname().isBlank()){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Никнейм не может быть пустым");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Никнейм не может быть пустым");
             return;
         }
         if (userDTO.email() == null || userDTO.email().isBlank()){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Почта не может быть пустой");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Почта не может быть пустой");
             return;
         }
         if (userDTO.password() == null || userDTO.password().isBlank()){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Пароль не может быть пустым");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Пароль не может быть пустым");
             return;
         }
         if (userDTO.nickname().length()>30){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Слишком длинный никнейм");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Слишком длинный никнейм");
             return;
         }
         if (!userDTO.email().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+[.][a-zA-Z]{2,}$")){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Неверный формат почты");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Неверный формат почты");
             return;
         }
 
@@ -95,9 +95,9 @@ public class AuthServlet extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_CREATED);
             jsonMapper.writeValue(respWriter, Map.of("success", true));
         } catch (ValidationException e){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (ConflictException e){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_CONFLICT, e.getMessage());
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_CONFLICT, e.getMessage());
         }
 
 
@@ -123,16 +123,16 @@ public class AuthServlet extends HttpServlet {
         try {
              userLoginDTO = jsonMapper.readValue(reqReader, UserLoginDTO.class);
         } catch (IOException e) {
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
             return;
         }
 
         if (userLoginDTO.emailOrNickname() == null || userLoginDTO.emailOrNickname().isBlank()){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Почта или никнейм не могут быть пустыми");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Почта или никнейм не могут быть пустыми");
             return;
         }
         if (userLoginDTO.password() == null || userLoginDTO.password().isBlank()){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Пароль не может быть пустым");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Пароль не может быть пустым");
             return;
         }
 
@@ -164,7 +164,7 @@ public class AuthServlet extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_OK);
             jsonMapper.writeValue(respWriter, Map.of("current_id", user.getId()));
         } catch (AuthenticationException e){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
         }
 
     }
@@ -203,7 +203,7 @@ public class AuthServlet extends HttpServlet {
         try {
             passwordDTO = jsonMapper.readValue(req.getReader(), ForgotPasswordDTO.class);
         } catch (IOException e) {
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Некорректный json");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Некорректный json");
             return;
         }
 
@@ -224,22 +224,17 @@ public class AuthServlet extends HttpServlet {
         try {
             resetPasswordDTO = jsonMapper.readValue(req.getReader(), ResetPasswordDTO.class);
         } catch (IOException e) {
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Некорректный json");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Некорректный json");
         }
 
         try {
             userService.changePassword(resetPasswordDTO.email(), resetPasswordDTO.code(), resetPasswordDTO.newPassword());
         } catch (ValidationException e){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         }
 
         resp.setStatus(HttpServletResponse.SC_OK);
         jsonMapper.writeValue(respWriter, Map.of("success", true));
     }
 
-    private void sendJsonError(HttpServletResponse resp, PrintWriter responseWriter, int status, String message) throws IOException {
-        resp.setStatus(status);
-        jsonMapper.writeValue(responseWriter, Map.of("error", message));
-
-    }
 }

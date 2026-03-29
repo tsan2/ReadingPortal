@@ -62,7 +62,7 @@ public class UserServlet extends HttpServlet {
                 getInfoUser(req, resp, id);
             } catch (NumberFormatException e) {
                 resp.setContentType("application/json; charset=UTF-8");
-                sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_NOT_FOUND, "Ресурс не найден");
+                JsonUtil.sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_NOT_FOUND, "Ресурс не найден");
             }
 
         }
@@ -86,7 +86,7 @@ public class UserServlet extends HttpServlet {
         }
         else {
             resp.setContentType("application/json; charset=UTF-8");
-            sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_NOT_FOUND, "Ресурс не найден");
+            JsonUtil.sendJsonError(resp, resp.getWriter(), HttpServletResponse.SC_NOT_FOUND, "Ресурс не найден");
         }
     }
 
@@ -98,7 +98,7 @@ public class UserServlet extends HttpServlet {
         HttpSession session = req.getSession();
         User user = (User) session.getAttribute("current_user");
         if (user==null){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, "Необходимо авторизоваться");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, "Необходимо авторизоваться");
             return;
         }
 
@@ -106,7 +106,7 @@ public class UserServlet extends HttpServlet {
         try{
             passwordDTO = jsonMapper.readValue(req.getReader(), ChangePasswordByOldPasswordDTO.class);
         } catch (IOException e) {
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
             return;
         }
 
@@ -115,7 +115,7 @@ public class UserServlet extends HttpServlet {
             resp.setStatus(HttpServletResponse.SC_OK);
             respWriter.println(jsonMapper.writeValueAsString(Map.of("success", true)));
         } catch (ValidationException e){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         }
     }
 
@@ -128,9 +128,12 @@ public class UserServlet extends HttpServlet {
             int size = Integer.parseInt(req.getParameter("size"));
 
             List<UserSummaryDTO> users = userService.findAllUser(page, size);
-            Map<String, List<UserSummaryDTO>> userMap = new HashMap<>();
-            userMap.put("users", users);
-            String json = jsonMapper.writeValueAsString(userMap);
+
+            long totalCount = userService.countAllUser();
+
+            PageResponseDTO<UserSummaryDTO> pageResponseDTO = new PageResponseDTO<>(users, totalCount, size, page);
+
+            String json = jsonMapper.writeValueAsString(pageResponseDTO);
             resp.setStatus(HttpServletResponse.SC_OK);
             respWriter.println(json);
         }
@@ -146,7 +149,7 @@ public class UserServlet extends HttpServlet {
         User user = (User) session.getAttribute("current_user");
 
         if (user==null){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, "Авторизуйтесь, чтобы сменить никнейм");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, "Авторизуйтесь, чтобы сменить никнейм");
             return;
         }
 
@@ -154,7 +157,7 @@ public class UserServlet extends HttpServlet {
         try{
             nicknameDTO = jsonMapper.readValue(req.getReader(), ChangeNicknameDTO.class);
         } catch (IOException e) {
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_BAD_REQUEST, "Отправлен некорректный json");
             return;
         }
 
@@ -167,9 +170,9 @@ public class UserServlet extends HttpServlet {
             respWriter.println(jsonMapper.writeValueAsString(Map.of("success", true)));
 
         } catch (EntityNotFoundException e){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
         } catch (ConflictException e){
-            sendJsonError(resp, respWriter, HttpServletResponse.SC_CONFLICT, e.getMessage());
+            JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_CONFLICT, e.getMessage());
         }
 
 
@@ -183,7 +186,7 @@ public class UserServlet extends HttpServlet {
             HttpSession session = req.getSession();
             User user = (User) session.getAttribute("current_user");
             if (user == null){
-                sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, "Вы не авторизованы");
+                JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, "Вы не авторизованы");
                 return;
             }
             ProfileDTO userProfile = new ProfileDTO(user.getId(), user.getNickname(), user.getEmail(), user.getCreatedAt());
@@ -200,7 +203,7 @@ public class UserServlet extends HttpServlet {
         try(PrintWriter respWriter = resp.getWriter()) {
             User user = userService.findUserByNickname(nickname);
             if (user == null){
-                sendJsonError(resp, respWriter, HttpServletResponse.SC_NOT_FOUND, "Пользователь не найден");
+                JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_NOT_FOUND, "Пользователь не найден");
                 return;
             }
             UserPublicInfoDTO userInfo = new UserPublicInfoDTO(user.getId(), user.getNickname(), user.getCreatedAt());
@@ -217,7 +220,7 @@ public class UserServlet extends HttpServlet {
         try(PrintWriter respWriter = resp.getWriter()) {
             User user = userService.findById(id);
             if (user == null){
-                sendJsonError(resp, respWriter, HttpServletResponse.SC_NOT_FOUND, "Пользователь не найден");
+                JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_NOT_FOUND, "Пользователь не найден");
                 return;
             }
             UserPublicInfoDTO userInfo = new UserPublicInfoDTO(user.getId(), user.getNickname(), user.getCreatedAt());
@@ -228,9 +231,4 @@ public class UserServlet extends HttpServlet {
         }
     }
 
-    private void sendJsonError(HttpServletResponse resp, PrintWriter responseWriter, int status, String message) throws IOException {
-        resp.setStatus(status);
-        jsonMapper.writeValue(responseWriter, Map.of("error", message));
-
-    }
 }

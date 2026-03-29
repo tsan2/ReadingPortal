@@ -5,6 +5,7 @@ import ru.anastasya.readingportal.dto.BookFilter;
 import ru.anastasya.readingportal.exception.*;
 import ru.anastasya.readingportal.models.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -117,12 +118,17 @@ public class BookService {
         if (!books.isEmpty()){
             HashMap<Long, List<User>> authorsMap = userDAO.findAllAuthorsOfBooks(books);
             HashMap<Long, List<Genre>> genresMap = genreDAO.findAllGenresOfBooks(books);
+
             for (Book book : books){
                 book.setAuthors(authorsMap.get(book.getId()));
                 book.setGenres(genresMap.get(book.getId()));
             }
         }
         return books;
+    }
+
+    public long countBooksByBookFilter(BookFilter bookFilter){
+        return bookDAO.countBooksByBookFilter(bookFilter);
     }
 
     public Book findById(Long id){
@@ -144,14 +150,7 @@ public class BookService {
     }
 
     public void deleteAllBookByUserId(Long userId){
-        BookFilter bookFilter = new BookFilter(userId, null, null);
-        List<Book> books = findFullBooksByBookFilter(bookFilter);
-
-        for (Book book : books){
-            if (book.getAuthors().size() == 1){
-                deleteBook(book.getId(), userId);
-            }
-        }
+        deleteAllBookByUserId(userId);
     }
 
     private void checkAuthority(Long bookId, Long userId){

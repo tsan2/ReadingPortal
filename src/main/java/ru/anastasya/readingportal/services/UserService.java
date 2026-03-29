@@ -140,6 +140,10 @@ public class UserService {
         return userSummaryDTOS;
     }
 
+    public long countAllUser(){
+        return userDAO.countAll();
+    }
+
     public User findById(Long id){
         return userDAO.findById(id);
     }

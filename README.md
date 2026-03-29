@@ -81,3 +81,8 @@ json
   "code" : "68350",
   "newPassword" : "my_password"
 }
+
+11.Список книг
+- URL: /book
+- Метод: GET
+- Query params: page, size, author_id, genre_id, sort_strategy

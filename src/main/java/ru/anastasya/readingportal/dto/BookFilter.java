@@ -1,37 +1,53 @@
 package ru.anastasya.readingportal.dto;
 
+import java.util.List;
+
 public class BookFilter {
 
-    private Long authorId;
-    private Long genreId;
+    private List<Long> authorsIds;
+    private List<Long> genresIds;
     private BookSortStrategy bookSortStrategy;
+    private int page;
+    private int size;
 
-    public BookFilter() {
-        this.authorId = null;
-        this.genreId = null;
-        this.bookSortStrategy = null;
-    }
-
-    public BookFilter(Long authorId, Long genreId, BookSortStrategy bookSortStrategy) {
-        this.authorId = authorId;
-        this.genreId = genreId;
+    public BookFilter(List<Long> authorsIds, List<Long> genresIds, BookSortStrategy bookSortStrategy, int page, int size) {
+        this.authorsIds = authorsIds;
+        this.genresIds = genresIds;
         this.bookSortStrategy = bookSortStrategy;
+        this.page = page;
+        this.size = size;
     }
 
-    public Long getAuthorId() {
-        return authorId;
+    public int getPage() {
+        return page;
     }
 
-    public void setAuthorId(Long authorId) {
-        this.authorId = authorId;
+    public void setPage(int page) {
+        this.page = page;
     }
 
-    public Long getGenreId() {
-        return genreId;
+    public int getSize() {
+        return size;
     }
 
-    public void setGenreId(Long genreId) {
-        this.genreId = genreId;
+    public void setSize(int size) {
+        this.size = size;
+    }
+
+    public List<Long> getAuthorsIds() {
+        return authorsIds;
+    }
+
+    public void setAuthorsIds(List<Long> authorsIds) {
+        this.authorsIds = authorsIds;
+    }
+
+    public List<Long> getGenresIds() {
+        return genresIds;
+    }
+
+    public void setGenresIds(List<Long> genresIds) {
+        this.genresIds = genresIds;
     }
 
     public BookSortStrategy getBookSortStrategy() {

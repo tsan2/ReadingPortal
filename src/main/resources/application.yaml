@@ -1,3 +1,23 @@
 spring:
   application:
     name: readingportal
+  datasource:
+    url: jdbc:postgresql://localhost:5433/reading_portal_db
+    username: postgres
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+server:
+  servlet:
+    context-path: /reading-portal
+  error:
+    include-message: always
+    include-exception: true

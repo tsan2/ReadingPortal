@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ru.anastasya.readingportal.dto.UserSummaryDTO;
 import ru.anastasya.readingportal.exception.*;
+import ru.anastasya.readingportal.models.PasswordResetCode;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.repositories.UserRepository;
 import ru.anastasya.readingportal.utils.PasswordUtil;
@@ -17,11 +18,13 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
 
-    UserService(UserRepository userRepository){
+    UserService(UserRepository userRepository, PasswordResetCodeService resetCodeService){
         this.userRepository = userRepository;
+        this.resetCodeService = resetCodeService;
     }
 
     private final UserRepository userRepository;
+    private final PasswordResetCodeService resetCodeService;
 
     @Transactional
     public void registerUser(User user){
@@ -79,26 +82,26 @@ public class UserService {
 
     }
 
-//    public void changePassword(String email, String code, String newPassword){
-//
-//        User user = userRepository.findByEmail(email);
-//
-//        if (user==null){
-//            throw new ValidationException("Неверный код или почта");
-//        }
-//
-//        Long UserId = user.getId();
-//
-//        if(!resetCodeService.validCode(UserId, code)){
-//            throw new ValidationException("Неверный код или почта");
-//        }
-//
-//        String hashPassword = PasswordUtil.hashPassword(newPassword);
-//
-//        userRepository.updatePasswordHash(user.getId(), hashPassword);
-//
-//        resetCodeService.deleteCodes(UserId);
-//    }
+    @Transactional
+    public void changePassword(String email, String code, String newPassword){
+
+        User user = userRepository.findByEmail(email);
+
+        if (user==null){
+            throw new ValidationException("Неверный код или почта");
+        }
+
+        Long UserId = user.getId();
+
+        if(!resetCodeService.validCode(UserId, code)){
+            throw new ValidationException("Неверный код или почта");
+        }
+
+        String hashPassword = PasswordUtil.hashPassword(newPassword);
+
+        user.setPasswordHash(hashPassword);
+        resetCodeService.deleteCodes(UserId);
+    }
 
     @Transactional
     public void changeNickname(Long id, String newNickname){

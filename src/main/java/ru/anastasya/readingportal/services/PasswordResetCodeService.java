@@ -2,6 +2,7 @@ package ru.anastasya.readingportal.services;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.models.PasswordResetCode;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.repositories.PasswordResetCodeRepository;
@@ -19,6 +20,7 @@ public class PasswordResetCodeService {
     private final UserRepository userRepository;
 
 
+    @Transactional
     public void sendCode(String email){
         User user = userRepository.findByEmail(email);
 
@@ -34,11 +36,13 @@ public class PasswordResetCodeService {
         emailService.sendCode(email, code);
     }
 
+    @Transactional(readOnly = true)
     public boolean validCode(Long userId, String code){
         PasswordResetCode resetCode = resetCodeRepository.findValidCode(userId, code);
         return resetCode != null;
     }
 
+    @Transactional
     public void deleteCodes(Long userId){
         resetCodeRepository.deleteByUserId(userId);
     }

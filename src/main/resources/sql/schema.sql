@@ -90,3 +90,9 @@ on users(nickname);
 
 CREATE UNIQUE INDEX
 ON volumes(book_id, volume_main_number, volume_sub_number);
+
+CREATE UNIQUE INDEX
+ON books_authors(user_id, book_id);
+
+CREATE UNIQUE INDEX
+ON books_genres(book_id, genre_id);

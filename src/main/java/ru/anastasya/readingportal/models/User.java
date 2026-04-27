@@ -1,17 +1,21 @@
 package ru.anastasya.readingportal.models;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.BitSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Setter
+@Getter
+@ToString
 @Entity
 @Table(name="users")
 public class User implements Serializable {
@@ -29,6 +33,22 @@ public class User implements Serializable {
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @ManyToMany(mappedBy = "authors", fetch = FetchType.LAZY)
+    private Set<Book> books;
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof User)) return false;
+        User user = (User) obj;
+        return Objects.equals(user.getEmail(), this.getEmail());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.getEmail().hashCode();
+    }
 
     public User(Long id, String nickname, String email, LocalDateTime createdAt) {
         this.id = id;

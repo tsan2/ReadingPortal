@@ -11,23 +11,16 @@ import java.util.List;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
 
-    //потом добавить удаление жанра по айди книги
-    //добавить добавление автора к книге
-    //удаление автора из книги
-    //удаление всех авторов из книги
-    //добавление жанра к книге
-    //удаление жанра из книги
-    //удаление всех жанров из книги
-    //удаление всех книг по айди юзера
 
-    //видимо оставить на потом когда будут многие ко многим
-//    @Query("""
-//            SELECT b FROM Book b WHERE
-//            ( b.authorsIds = :authorsIds) AND b.genresIds = :genresIds""")
-//    Page<Book> findBooksByBookFilter(@Param("authorsIds") List<Long> authorsIds,
-//                                     @Param("genresIds") List<Long> genresIds,
-//                                     Pageable pageable);
+    @Query("""
+            SELECT DISTINCT b FROM Book b
+            LEFT JOIN b.authors
+            LEFT JOIN b.genres g WHERE
+            (:authorsIds IS NULL OR a.id IN :authorsIds) AND
+            (:genresIds IS NULL g.id IN :genresIds)""")
+    Page<Book> findBooksByBookFilter(@Param("authorsIds") List<Long> authorsIds,
+                                     @Param("genresIds") List<Long> genresIds,
+                                     Pageable pageable);
 
-    //метод проверка есть ли жанр у книги
-    //метод проверка есть ли автор у книги
+    void deleteAllByUserId(Long userId);
 }

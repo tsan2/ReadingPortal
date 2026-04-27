@@ -1,15 +1,17 @@
 package ru.anastasya.readingportal.models;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.util.Objects;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
-@Data
+@Getter
+@Setter
+@ToString
 @Table(name = "genres")
+@Entity
 public class Genre {
 
     @Id
@@ -23,4 +25,17 @@ public class Genre {
         this.name = name;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Genre)) return false;
+        Genre genre = (Genre) obj;
+
+        return Objects.equals(genre.getName(), this.getName());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.getName().hashCode();
+    }
 }

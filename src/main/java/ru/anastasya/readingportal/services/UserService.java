@@ -1,10 +1,10 @@
 package ru.anastasya.readingportal.services;
 
-import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.UserSummaryDTO;
 import ru.anastasya.readingportal.exception.*;
 import ru.anastasya.readingportal.models.PasswordResetCode;
@@ -46,6 +46,7 @@ public class UserService {
         user.setPasswordHash(hashPassword);
     }
 
+    @Transactional(readOnly = true)
     public User authorizationUser(String emailOrNickname, String password){
 
         User user = userRepository.findByEmailOrNickname(emailOrNickname);
@@ -124,6 +125,7 @@ public class UserService {
         user.setNickname(newNickname);
     }
 
+    @Transactional
     public void changeEmail(Long id, String password, String newEmail){
         User user = userRepository.findById(id).orElse(null);
         if (user==null){
@@ -143,6 +145,7 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
     public Page<UserSummaryDTO> findAllUser(int page, int size){
         Pageable pageable = PageRequest.of(page-1, size);
         Page<User> users = userRepository.findAll(pageable);
@@ -151,14 +154,17 @@ public class UserService {
         return userSummaryDTOS;
     }
 
+    @Transactional(readOnly = true)
     public long countAllUser(){
         return userRepository.count();
     }
 
+    @Transactional(readOnly = true)
     public User findById(Long id){
         return userRepository.findById(id).orElse(null);
     }
 
+    @Transactional(readOnly = true)
     public User findUserByNickname(String nickname){
         return userRepository.findByNickname(nickname);
     }

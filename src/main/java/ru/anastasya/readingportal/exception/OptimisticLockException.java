@@ -3,9 +3,9 @@ package ru.anastasya.readingportal.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.FORBIDDEN)
-public class ForbiddenException extends ServiceException {
-    public ForbiddenException(String message) {
+@ResponseStatus(HttpStatus.CONFLICT)
+public class OptimisticLockException extends ServiceException {
+    public OptimisticLockException(String message) {
         super(message);
     }
 }

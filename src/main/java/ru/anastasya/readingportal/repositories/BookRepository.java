@@ -14,13 +14,18 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     @Query("""
             SELECT DISTINCT b FROM Book b
-            LEFT JOIN b.authors
+            LEFT JOIN b.authors a
             LEFT JOIN b.genres g WHERE
             (:authorsIds IS NULL OR a.id IN :authorsIds) AND
-            (:genresIds IS NULL g.id IN :genresIds)""")
+            (:genresIds IS NULL OR g.id IN :genresIds)""")
     Page<Book> findBooksByBookFilter(@Param("authorsIds") List<Long> authorsIds,
                                      @Param("genresIds") List<Long> genresIds,
                                      Pageable pageable);
 
-    void deleteAllByUserId(Long userId);
+    @Query("""
+            DELETE FROM Book b
+            WHERE (:userId IN (SELECT a.id FROM b.authors a))
+            AND SIZE(b.authors) = 1
+            """)
+    void deleteAllByUserId(@Param("userId") Long userId);
 }

@@ -31,6 +31,8 @@ public class Book {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+    @Version
+    private Integer version;
 
     @JoinTable(name = "books_genres",
             joinColumns = @JoinColumn(name = "book_id"),
@@ -40,11 +42,11 @@ public class Book {
 
     @JoinTable(name = "books_authors",
             joinColumns = @JoinColumn(name = "book_id"),
-            inverseJoinColumns = @JoinColumn(name = "author_id"))
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
     @ManyToMany(fetch = FetchType.LAZY)
     private Set<User> authors;
 
-    @OneToMany(mappedBy = "books", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Volume> volumes;
 
     @Override

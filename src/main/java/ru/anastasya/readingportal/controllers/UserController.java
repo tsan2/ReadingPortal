@@ -34,7 +34,7 @@ public class UserController {
     //потом будет по авторизации
     @PatchMapping("/change-password")
     public ResponseEntity<String> changePasswordByOldPassword(@RequestBody ChangePasswordByOldPasswordDTO passwordDTO) {
-        userService.changePassword(passwordDTO.id(), passwordDTO.oldPassword(), passwordDTO.newPassword());
+        userService.changePassword(passwordDTO);
         return new ResponseEntity<>("Пароль изменен", HttpStatus.OK);
     }
 
@@ -47,28 +47,30 @@ public class UserController {
     //потом будет по авторизации
     @PatchMapping("/change-nickname")
     public ResponseEntity<String> changeNickname(@RequestBody ChangeNicknameDTO nicknameDTO) {
-        userService.changeNickname(nicknameDTO.id(), nicknameDTO.nickname());
+        userService.changeNickname(nicknameDTO);
         return new ResponseEntity<>("Успешно", HttpStatus.OK);
     }
-//
-//    private void getProfile(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-//        resp.setContentType("application/json; charset=UTF-8");
-//
-//        try(PrintWriter respWriter = resp.getWriter()) {
-//            HttpSession session = req.getSession();
-//            User user = (User) session.getAttribute("current_user");
-//            if (user == null){
-//                JsonUtil.sendJsonError(resp, respWriter, HttpServletResponse.SC_UNAUTHORIZED, "Вы не авторизованы");
-//                return;
-//            }
-//            ProfileDTO userProfile = new ProfileDTO(user.getId(), user.getNickname(), user.getEmail(), user.getCreatedAt());
-//            String json = jsonMapper.writeValueAsString(userProfile);
-//
-//            resp.setStatus(HttpServletResponse.SC_OK);
-//            respWriter.println(json);
-//        }
-//    }
-//
+
+    //потом будет по авторизации
+    @PatchMapping("/change-email")
+    public ResponseEntity<String> changeEmail(@RequestBody ChangeEmailDTO emailDTO){
+        userService.changeEmail(emailDTO);
+        return new ResponseEntity<>("Успешно", HttpStatus.OK);
+    }
+
+    //временная реализация пока нет авторизации
+    @GetMapping("/profile/{id}")
+    private ResponseEntity<?> getProfile(@PathVariable Long id) {
+        User user = userService.findById(id);
+        if (user == null){
+            return new ResponseEntity<>("Пользователь не найден", HttpStatus.NOT_FOUND);
+        }
+        ProfileDTO userProfile = new ProfileDTO(user.getId(), user.getNickname(),
+                user.getEmail(), user.getCreatedAt(), user.getVersion());
+
+        return new ResponseEntity<>(userProfile, HttpStatus.OK);
+    }
+
     @GetMapping(params = "nickname")
     public ResponseEntity<?> getInfoUserByNickname(@RequestParam String nickname) {
         User user = userService.findUserByNickname(nickname);

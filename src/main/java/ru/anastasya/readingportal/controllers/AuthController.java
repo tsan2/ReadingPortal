@@ -82,7 +82,7 @@ public class AuthController {
         }
 
 
-        userService.changePassword(resetPasswordDTO.email(), resetPasswordDTO.code(), resetPasswordDTO.newPassword());
+        userService.changePassword(resetPasswordDTO);
 
         return new ResponseEntity<>("Успешно", HttpStatus.OK);
     }

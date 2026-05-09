@@ -3,6 +3,8 @@ package ru.anastasya.readingportal.services;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.anastasya.readingportal.dto.ChangeVolumeNumberDTO;
+import ru.anastasya.readingportal.dto.ChangeVolumeTitleDTO;
 import ru.anastasya.readingportal.dto.FractionalNumber;
 import ru.anastasya.readingportal.dto.VolumeRequest;
 import ru.anastasya.readingportal.exception.*;
@@ -92,29 +94,36 @@ public class VolumeService {
     }
 
     @Transactional
-    public void changeTitle(Long id, String newTitle, Long currentUserId){
-        checkAuthorityByVolumeId(id, currentUserId);
+    public void changeTitle(ChangeVolumeTitleDTO dto){
+        checkAuthorityByVolumeId(dto.id(), dto.currentUserId());
 
-        Volume volume = volumeRepository.findById(id)
+        Volume volume = volumeRepository.findById(dto.id())
                 .orElseThrow(() -> new EntityNotFoundException("Том с таким id не найден"));
-        if (newTitle == null || newTitle.isBlank()){
+        if (!volume.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
+        if (dto.newTitle() == null || dto.newTitle().isBlank()){
             throw new ValidationException("Название не может быть пустым");
         }
         if (volume.getTitle().length()>250){
             throw new ValidationException("Название не может быть длиннее 250 символов");
         }
-        volume.setTitle(newTitle);
+        volume.setTitle(dto.newTitle());
     }
 
     @Transactional
-    public OperationResult changeVolumeNumber(Long id, double volumeNumber, Long currentUserId){
-        checkAuthorityByVolumeId(id, currentUserId);
+    public OperationResult changeVolumeNumber(ChangeVolumeNumberDTO dto){
+        checkAuthorityByVolumeId(dto.id(), dto.currentUserId());
 
-        Volume volume = volumeRepository.findById(id)
+        Volume volume = volumeRepository.findById(dto.id())
                 .orElseThrow(() -> new EntityNotFoundException("Том с таким id не найден"));
         String warningMessage = null;
 
-        FractionalNumber fractionalNumber = mapToFractionalNumber(volumeNumber);
+        if (!volume.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
+
+        FractionalNumber fractionalNumber = mapToFractionalNumber(dto.volumeNumber());
         int volumeMainNumber = fractionalNumber.mainNumber();
         int volumeSubNumber = fractionalNumber.subNumber();
 

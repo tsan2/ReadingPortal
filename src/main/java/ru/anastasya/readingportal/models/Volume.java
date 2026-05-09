@@ -25,6 +25,8 @@ public class Volume {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "book_id")
     private Book book;
+    @Version
+    private Integer version;
 
     public Volume(String title, int volumeMainNumber, int volumeSubNumber, boolean isDefault) {
         this.title = title;

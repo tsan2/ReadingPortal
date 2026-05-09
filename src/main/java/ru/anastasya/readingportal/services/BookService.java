@@ -7,19 +7,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.anastasya.readingportal.dto.BookFilter;
-import ru.anastasya.readingportal.dto.BookSummaryDTO;
+import ru.anastasya.readingportal.dto.*;
 import ru.anastasya.readingportal.exception.*;
 import ru.anastasya.readingportal.models.Book;
 import ru.anastasya.readingportal.models.Genre;
 import ru.anastasya.readingportal.models.User;
-import ru.anastasya.readingportal.models.Volume;
 import ru.anastasya.readingportal.repositories.BookRepository;
 import ru.anastasya.readingportal.repositories.GenreRepository;
 import ru.anastasya.readingportal.repositories.UserRepository;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
 
 @AllArgsConstructor
@@ -49,79 +45,80 @@ public class BookService {
         return book.getId();
     }
 
+    //пока будет такое dto, потом там будет только id книги, новое название, версия. currentUserId через авторизацию
     @Transactional
-    public void changeTitle(Long bookId, String newTitle, Long currentUserId){
-        Objects.requireNonNull(bookId, "нельзя изменить книгу с null id");
+    public void changeTitle(ChangeBookTitleDTO dto){
+        Objects.requireNonNull(dto.bookId(), "нельзя изменить книгу с null id");
 
-        checkAuthority(bookId, currentUserId);
+        Book book = bookRepository.findById(dto.bookId()).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+        checkAuthority(book, dto.currentUserId());
 
-        if (newTitle == null || newTitle.isBlank()){
+        if (dto.newTitle() == null || dto.newTitle().isBlank()){
             throw new ValidationException("Название не может быть пустым");
         }
-        if (newTitle.length()>250){
+        if (dto.newTitle().length()>250){
             throw new ValidationException("Название не может быть длиннее 250 символов");
         }
-
-        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-
-        book.setTitle(newTitle);
+        if (!book.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
+        book.setTitle(dto.newTitle());
     }
 
     @Transactional
-    public void addAuthorToBook(Long bookId, Long authorId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
-        if (!bookRepository.existsById(bookId)){
-            throw new EntityNotFoundException("Такой книги не существует");
-        }
-        if (!userRepository.existsById(authorId)){
-            throw new EntityNotFoundException("Такого пользователя не существует");
-        }
-
-        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        if (book.getAuthors().stream().anyMatch(u -> u.getId().equals(currentUserId))){
+    public void addAuthorToBook(AddOrDeleteAuthorToFromBookDTO dto){
+        Book book = bookRepository.findById(dto.bookId()).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+        checkAuthority(book, dto.currentUserId());
+        if (book.getAuthors().stream().anyMatch(u -> u.getId().equals(dto.authorId()))){
             throw new ConflictException("К книге уже добавлен этот автор");
         }
-        User author = userRepository.findById(authorId).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        if (!book.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
+        User author = userRepository.findById(dto.authorId()).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
         book.getAuthors().add(author);
     }
 
     @Transactional
-    public void addGenreToBook(Long bookId, Long genreId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
-        if (!bookRepository.existsById(bookId)){
-            throw new EntityNotFoundException("Такой книги не существует");
-        }
-        if (!genreRepository.existsById(genreId)){
-            throw new EntityNotFoundException("Такого жанра не существует");
-        }
+    public void addGenreToBook(AddOrDeleteGenreToFromBookDTO dto){
+        Book book = bookRepository.findById(dto.bookId()).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+        checkAuthority(book, dto.currentUserId());
 
-        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        if (book.getGenres().stream().anyMatch(g -> g.getId().equals(genreId))){
+        if (book.getGenres().stream().anyMatch(g -> g.getId().equals(dto.genreId()))){
             throw new ConflictException("К книге уже добавлен этот жанр");
         }
-        Genre genre = genreRepository.findById(genreId).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        Genre genre = genreRepository.findById(dto.genreId()).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        if (!book.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
         book.getGenres().add(genre);
     }
 
     @Transactional
-    public void deleteAuthorFromBook(Long bookId, Long authorId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
-        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        if (book.getAuthors().stream().noneMatch(a -> a.getId().equals(authorId))){
+    public void deleteAuthorFromBook(AddOrDeleteAuthorToFromBookDTO dto){
+        Book book = bookRepository.findById(dto.bookId()).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+        checkAuthority(book, dto.currentUserId());
+        if (book.getAuthors().stream().noneMatch(a -> a.getId().equals(dto.authorId()))){
             throw new ConflictException("К книге не добавлен этот автор");
         }
-        User author = userRepository.findById(authorId).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        User author = userRepository.findById(dto.authorId()).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        if (!book.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
         book.getAuthors().remove(author);
     }
 
     @Transactional
-    public void deleteGenreFromBook(Long bookId, Long genreId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
-        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        if (book.getGenres().stream().noneMatch(g -> g.getId().equals(genreId))){
+    public void deleteGenreFromBook(AddOrDeleteGenreToFromBookDTO dto){
+        Book book = bookRepository.findById(dto.bookId()).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+        checkAuthority(book, dto.currentUserId());
+        if (book.getGenres().stream().noneMatch(g -> g.getId().equals(dto.genreId()))){
             throw new ConflictException("К книге не добавлен этот жанр");
         }
-        Genre genre = genreRepository.findById(genreId).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        Genre genre = genreRepository.findById(dto.genreId()).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        if (!book.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
         book.getGenres().add(genre);
     }
 
@@ -160,9 +157,10 @@ public class BookService {
 
     @Transactional
     public void deleteBook(Long bookId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+        checkAuthority(book, currentUserId);
 
-        bookRepository.deleteById(bookId);
+        bookRepository.delete(book);
     }
 
     @Transactional
@@ -170,8 +168,7 @@ public class BookService {
         bookRepository.deleteAllByUserId(userId);
     }
 
-    private void checkAuthority(Long bookId, Long userId){
-        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+    private void checkAuthority(Book book, Long userId){
         if (book.getAuthors().stream().noneMatch(u -> u.getId().equals(userId))){
             throw new ForbiddenException("У вас нет прав");
         }

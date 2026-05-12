@@ -1,31 +1,29 @@
 package ru.anastasya.readingportal.controllers;
 
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.GenreRequestDTO;
 import ru.anastasya.readingportal.dto.GenreResponseDTO;
-import ru.anastasya.readingportal.exception.ValidationException;
+import ru.anastasya.readingportal.exceptions.ValidationException;
+import ru.anastasya.readingportal.mappers.GenreMapper;
 import ru.anastasya.readingportal.models.Genre;
 import ru.anastasya.readingportal.services.GenreService;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/genre")
 public class GenreController {
 
-    GenreController(GenreService genreService){
-        this.genreService = genreService;
-    }
-
     private final GenreService genreService;
+    private final GenreMapper genreMapper;
 
     @PostMapping("")
-    public ResponseEntity<String> createGenre(@RequestBody GenreRequestDTO genreRequestDTO){
-        if (genreRequestDTO.name() == null){
-            throw new ValidationException("Имя жанра не может быть пустым");
-        }
-        genreService.createGenre(new Genre(genreRequestDTO.name()));
+    public ResponseEntity<String> createGenre(@RequestBody @Valid GenreRequestDTO genreRequestDTO){
+        genreService.createGenre(genreRequestDTO);
         return new ResponseEntity<>("Успешно", HttpStatus.OK);
     }
 
@@ -44,7 +42,8 @@ public class GenreController {
         if (genre == null){
             return new ResponseEntity<>("Жанр не найден", HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(new GenreResponseDTO(genre.getId(), genre.getName()), HttpStatus.OK);
+        GenreResponseDTO genreResponseDTO = genreMapper.toGenreResponseDTO(genre);
+        return new ResponseEntity<>(genreResponseDTO, HttpStatus.OK);
     }
 
     @GetMapping(params = "name")
@@ -53,12 +52,13 @@ public class GenreController {
         if (genre == null){
             return new ResponseEntity<>("Жанр не найден", HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<>(new GenreResponseDTO(genre.getId(), genre.getName()), HttpStatus.OK);
+        GenreResponseDTO genreResponseDTO = genreMapper.toGenreResponseDTO(genre);
+        return new ResponseEntity<>(genreResponseDTO, HttpStatus.OK);
     }
 
     @GetMapping("")
     public Page<GenreResponseDTO> findAll(@RequestParam int size, @RequestParam int page){
-        return genreService.findAll(size, page).map(g -> new GenreResponseDTO(g.getId(), g.getName()));
+        return genreService.findAll(size, page).map(genreMapper::toGenreResponseDTO);
     }
 
 }

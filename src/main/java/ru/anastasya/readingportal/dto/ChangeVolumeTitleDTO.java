@@ -1,4 +1,17 @@
 package ru.anastasya.readingportal.dto;
 
-public record ChangeVolumeTitleDTO(Long id, String newTitle, Long currentUserId, Integer version) {
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+public record ChangeVolumeTitleDTO(
+        @NotNull
+        Long id,
+        @NotBlank
+        @Size(min = 2, max = 250)
+        String newTitle,
+        @NotNull
+        Long currentUserId,
+        @NotNull
+        Integer version) {
 }

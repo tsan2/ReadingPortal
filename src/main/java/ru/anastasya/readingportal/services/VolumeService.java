@@ -7,9 +7,8 @@ import ru.anastasya.readingportal.dto.ChangeVolumeNumberDTO;
 import ru.anastasya.readingportal.dto.ChangeVolumeTitleDTO;
 import ru.anastasya.readingportal.dto.FractionalNumber;
 import ru.anastasya.readingportal.dto.VolumeRequest;
-import ru.anastasya.readingportal.exception.*;
+import ru.anastasya.readingportal.exceptions.*;
 import ru.anastasya.readingportal.models.Book;
-import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.models.Volume;
 import ru.anastasya.readingportal.repositories.BookRepository;
 import ru.anastasya.readingportal.repositories.VolumeRepository;
@@ -37,15 +36,6 @@ public class VolumeService {
         String warningMessage = null;
         Long id = null;
 
-        if (volume.getTitle() == null || volume.getTitle().isBlank()){
-            throw new ValidationException("Название не может быть пустым");
-        }
-        if (volume.getTitle().length()>250){
-            throw new ValidationException("Название не может быть длиннее 250 символов");
-        }
-        if (volume.getVolumeMainNumber() < 0 || volume.getVolumeSubNumber() < 0){
-            throw new ValidationException("Номер тома не может быть меньше 0");
-        }
         int maxNumber = volumeRepository.findLastMainNumberByBookId(bookId);
         if (volume.getVolumeMainNumber() > maxNumber + 1){
             warningMessage = "Вы пропускаете номер тома. Последний номер сейчас: " + maxNumber;
@@ -102,12 +92,6 @@ public class VolumeService {
         if (!volume.getVersion().equals(dto.version())){
             throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
         }
-        if (dto.newTitle() == null || dto.newTitle().isBlank()){
-            throw new ValidationException("Название не может быть пустым");
-        }
-        if (volume.getTitle().length()>250){
-            throw new ValidationException("Название не может быть длиннее 250 символов");
-        }
         volume.setTitle(dto.newTitle());
     }
 
@@ -127,9 +111,6 @@ public class VolumeService {
         int volumeMainNumber = fractionalNumber.mainNumber();
         int volumeSubNumber = fractionalNumber.subNumber();
 
-        if (volumeMainNumber < 0 || volumeSubNumber < 0){
-            throw new ValidationException("Номер тома не может быть меньше 0");
-        }
         if (volumeRepository.existsByBookIdAndVolumeMainNumberAndVolumeSubNumberAndIsDefaultFalse
                 (volume.getBook().getId(), volumeMainNumber, volumeSubNumber)){
             throw new ValidationException("Такой номер тома уже существует");

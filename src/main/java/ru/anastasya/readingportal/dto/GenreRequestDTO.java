@@ -1,4 +1,10 @@
 package ru.anastasya.readingportal.dto;
 
-public record GenreRequestDTO(String name) {
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record GenreRequestDTO(
+        @NotBlank
+        @Size(min=2, max=100)
+        String name) {
 }

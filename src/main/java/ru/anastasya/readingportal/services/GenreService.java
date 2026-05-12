@@ -1,36 +1,29 @@
 package ru.anastasya.readingportal.services;
 
+import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.anastasya.readingportal.exception.ValidationException;
+import ru.anastasya.readingportal.dto.GenreRequestDTO;
+import ru.anastasya.readingportal.exceptions.ValidationException;
+import ru.anastasya.readingportal.mappers.GenreMapper;
 import ru.anastasya.readingportal.models.Genre;
 import ru.anastasya.readingportal.repositories.GenreRepository;
 
-import java.util.List;
 import java.util.Objects;
 
 @Service
+@AllArgsConstructor
 public class GenreService {
 
-    GenreService(GenreRepository genreRepository){
-        this.genreRepository = genreRepository;
-    }
-
     private final GenreRepository genreRepository;
+    private final GenreMapper genreMapper;
 
     @Transactional
-    public void createGenre(Genre genre){
-        Objects.requireNonNull(genre, "Нельзя создать null genre");
-        if (genre.getName() == null || genre.getName().isBlank()){
-            throw new ValidationException("Имя не может быть пустым");
-        }
-        if (genre.getName().length() > 100){
-            throw new ValidationException("Имя слишком большое. Максимальная длина 100 символов");
-        }
-
+    public void createGenre(GenreRequestDTO genreRequestDTO){
+        Genre genre = genreMapper.fromGenreRequestDTO(genreRequestDTO);
         genreRepository.save(genre);
     }
 

@@ -1,4 +1,4 @@
-package ru.anastasya.readingportal.exception;
+package ru.anastasya.readingportal.exceptions;
 
 public class ServiceException extends RuntimeException {
     public ServiceException(String message) {

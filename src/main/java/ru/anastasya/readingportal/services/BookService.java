@@ -8,7 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.*;
-import ru.anastasya.readingportal.exception.*;
+import ru.anastasya.readingportal.exceptions.*;
 import ru.anastasya.readingportal.models.Book;
 import ru.anastasya.readingportal.models.Genre;
 import ru.anastasya.readingportal.models.User;
@@ -27,9 +27,9 @@ public class BookService {
     private final GenreRepository genreRepository;
     private final VolumeService volumeService;
 
+    //потом будет через dto
     @Transactional
     public Long createBookPlaceholder(Book book, Long authorId){
-        Objects.requireNonNull(book, "нельзя создать null book");
 
         if (book.getTitle() == null || book.getTitle().isBlank()){
             throw new ValidationException("Название не может быть пустым");
@@ -48,17 +48,9 @@ public class BookService {
     //пока будет такое dto, потом там будет только id книги, новое название, версия. currentUserId через авторизацию
     @Transactional
     public void changeTitle(ChangeBookTitleDTO dto){
-        Objects.requireNonNull(dto.bookId(), "нельзя изменить книгу с null id");
-
         Book book = bookRepository.findById(dto.bookId()).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
         checkAuthority(book, dto.currentUserId());
 
-        if (dto.newTitle() == null || dto.newTitle().isBlank()){
-            throw new ValidationException("Название не может быть пустым");
-        }
-        if (dto.newTitle().length()>250){
-            throw new ValidationException("Название не может быть длиннее 250 символов");
-        }
         if (!book.getVersion().equals(dto.version())){
             throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
         }

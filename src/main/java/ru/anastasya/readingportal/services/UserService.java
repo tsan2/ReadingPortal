@@ -6,7 +6,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.*;
-import ru.anastasya.readingportal.exception.*;
+import ru.anastasya.readingportal.exceptions.*;
+import ru.anastasya.readingportal.mappers.UserMapper;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.repositories.UserRepository;
 import ru.anastasya.readingportal.utils.PasswordUtil;
@@ -14,23 +15,22 @@ import ru.anastasya.readingportal.utils.PasswordUtil;
 @Service
 public class UserService {
 
-    UserService(UserRepository userRepository, PasswordResetCodeService resetCodeService){
+    UserService(UserRepository userRepository, PasswordResetCodeService resetCodeService, UserMapper userMapper){
         this.userRepository = userRepository;
         this.resetCodeService = resetCodeService;
+        this.userMapper = userMapper;
     }
 
     private final UserRepository userRepository;
     private final PasswordResetCodeService resetCodeService;
+    private final UserMapper userMapper;
 
     @Transactional
-    public void registerUser(User user){
-        validateUser(user);
-        if (user.getNickname().length()>30){
-            throw new ValidationException("Слишком длинный никнейм");
-        }
-        if (!user.getEmail().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+[.][a-zA-Z]{2,}$")){
-            throw new ValidationException("Это не адрес электронной почты");
-        }
+    public void registerUser(UserRegisterDTO userRegisterDTO){
+        User user = userMapper.fromUserRegisterDTO(userRegisterDTO);
+        String hashPassword = PasswordUtil.hashPassword(user.getPasswordHash());
+        user.setPasswordHash(hashPassword);
+
         if (userRepository.existsByEmail(user.getEmail())){
             throw new ConflictException("Аккаунт с такой почтой уже существует");
         }
@@ -38,8 +38,6 @@ public class UserService {
             throw new ConflictException("Аккаунт с таким никнеймом уже существует");
         }
 
-        String hashPassword = PasswordUtil.hashPassword(user.getPasswordHash());
-        user.setPasswordHash(hashPassword);
         userRepository.save(user);
     }
 
@@ -63,12 +61,7 @@ public class UserService {
 
     @Transactional
     public void changePassword(ChangePasswordByOldPasswordDTO dto){
-        if (dto.id() == null){
-            throw new ValidationException("id не может быть пустым");
-        }
-        if (dto.newPassword() == null || dto.newPassword().isBlank()){
-            throw new ValidationException("Новый пароль не может быть пустым");
-        }
+
         User user = userRepository.findById(dto.id()).orElseThrow(() -> new EntityNotFoundException("Пользователь с таким id не найден"));
         if (PasswordUtil.checkPassword(dto.oldPassword(), user.getPasswordHash())){
             if (!user.getVersion().equals(dto.version())){
@@ -106,12 +99,6 @@ public class UserService {
 
     @Transactional
     public void changeNickname(ChangeNicknameDTO dto){
-        if (dto.id() == null){
-            throw new ValidationException("id не может быть null");
-        }
-        if (dto.newNickname() == null || dto.newNickname().isBlank()){
-            throw new ValidationException("никнейм не может быть пустым");
-        }
         User user = userRepository.findById(dto.id()).orElse(null);
         if (user==null){
             throw new EntityNotFoundException("Пользователь не найден");
@@ -152,7 +139,7 @@ public class UserService {
     public Page<UserSummaryDTO> findAllUser(int page, int size){
         Pageable pageable = PageRequest.of(page-1, size);
         Page<User> users = userRepository.findAll(pageable);
-        Page<UserSummaryDTO> userSummaryDTOS = users.map(u -> new UserSummaryDTO(u.getId(), u.getNickname()));
+        Page<UserSummaryDTO> userSummaryDTOS = users.map(userMapper::toUserSummaryDTO);
 
         return userSummaryDTOS;
     }
@@ -184,16 +171,6 @@ public class UserService {
 //
 //    }
 
-    private void validateUser(User user){
-        if (user.getNickname() == null || user.getNickname().isBlank()){
-            throw new ValidationException("Никнейм не может быть пустым");
-        }
-        if (user.getEmail() == null || user.getEmail().isBlank()){
-            throw new ValidationException("Почта не может быть пустой");
-        }
-        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()){
-            throw new ValidationException("Пароль не может быть пустым");
-        }
-    }
+
 
 }

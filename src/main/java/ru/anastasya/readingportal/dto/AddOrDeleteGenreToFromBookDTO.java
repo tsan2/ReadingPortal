@@ -1,4 +1,14 @@
 package ru.anastasya.readingportal.dto;
 
-public record AddOrDeleteGenreToFromBookDTO(Long bookId, Long genreId, Long currentUserId, Integer version) {
+import jakarta.validation.constraints.NotNull;
+
+public record AddOrDeleteGenreToFromBookDTO(
+        @NotNull
+        Long bookId,
+        @NotNull
+        Long genreId,
+        @NotNull
+        Long currentUserId,
+        @NotNull
+        Integer version) {
 }

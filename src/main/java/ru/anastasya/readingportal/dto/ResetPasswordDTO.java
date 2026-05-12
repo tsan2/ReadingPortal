@@ -1,4 +1,16 @@
 package ru.anastasya.readingportal.dto;
 
-public record ResetPasswordDTO(String email, String code, String newPassword) {
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record ResetPasswordDTO(
+        @NotBlank
+        @Email
+        String email,
+        @NotBlank
+        String code,
+        @NotBlank
+        @Size(min = 4)
+        String newPassword) {
 }

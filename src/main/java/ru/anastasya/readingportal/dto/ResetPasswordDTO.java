@@ -3,14 +3,14 @@ package ru.anastasya.readingportal.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import ru.anastasya.readingportal.dto.validation.ValidPassword;
+import ru.anastasya.readingportal.dto.validation.ValidUserEmail;
 
 public record ResetPasswordDTO(
-        @NotBlank
-        @Email
+        @ValidUserEmail
         String email,
         @NotBlank
         String code,
-        @NotBlank
-        @Size(min = 4)
+        @ValidPassword
         String newPassword) {
 }

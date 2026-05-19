@@ -3,15 +3,15 @@ package ru.anastasya.readingportal.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import ru.anastasya.readingportal.dto.validation.ValidPassword;
+import ru.anastasya.readingportal.dto.validation.ValidUserEmail;
+import ru.anastasya.readingportal.dto.validation.ValidUserNickname;
 
 public record UserRegisterDTO(
-        @NotBlank
-        @Size(min = 2, max = 30)
+        @ValidUserNickname
         String nickname,
-        @NotBlank
-        @Email
+        @ValidUserEmail
         String email,
-        @NotBlank
-        @Size(min = 4)
+        @ValidPassword
         String password) {
 }

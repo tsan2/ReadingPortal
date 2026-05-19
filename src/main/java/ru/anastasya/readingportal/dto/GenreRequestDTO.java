@@ -2,9 +2,9 @@ package ru.anastasya.readingportal.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import ru.anastasya.readingportal.dto.validation.ValidGenreName;
 
 public record GenreRequestDTO(
-        @NotBlank
-        @Size(min=2, max=100)
+        @ValidGenreName
         String name) {
 }

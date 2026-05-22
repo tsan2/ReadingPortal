@@ -22,7 +22,7 @@ public class PasswordResetCodeService {
 
     @Transactional
     public void sendCode(String email){
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email).orElse(null);
 
         if (user==null){
             return;

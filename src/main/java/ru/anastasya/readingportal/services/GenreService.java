@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.GenreRequestDTO;
+import ru.anastasya.readingportal.exceptions.EntityNotFoundException;
 import ru.anastasya.readingportal.exceptions.ValidationException;
 import ru.anastasya.readingportal.mappers.GenreMapper;
 import ru.anastasya.readingportal.models.Genre;
@@ -34,12 +35,12 @@ public class GenreService {
 
     @Transactional(readOnly = true)
     public Genre findById(Long id){
-        return genreRepository.findById(id).orElse(null);
+        return genreRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
     }
 
     @Transactional(readOnly = true)
     public Genre findByName(String name){
-        return genreRepository.findByName(name);
+        return genreRepository.findByName(name).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
     }
 
     @Transactional(readOnly = true)

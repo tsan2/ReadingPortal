@@ -2,6 +2,7 @@ package ru.anastasya.readingportal.controllers;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,9 +51,6 @@ public class UserController {
     @GetMapping("/profile/{id}")
     private ResponseEntity<?> getProfile(@PathVariable Long id) {
         User user = userService.findById(id);
-        if (user == null){
-            return new ResponseEntity<>("Пользователь не найден", HttpStatus.NOT_FOUND);
-        }
 
         ProfileDTO userProfile = userMapper.toProfileDTO(user);
 
@@ -62,9 +60,6 @@ public class UserController {
     @GetMapping(params = "nickname")
     public ResponseEntity<?> getInfoUserByNickname(@RequestParam String nickname) {
         User user = userService.findUserByNickname(nickname);
-        if (user == null){
-            return new ResponseEntity<>("Пользователь не найден", HttpStatus.NOT_FOUND);
-        }
         UserPublicInfoDTO userInfo = userMapper.toUserPublicInfoDTO(user);
         return new ResponseEntity<>(userInfo, HttpStatus.OK);
     }
@@ -72,10 +67,8 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getInfoUser(@PathVariable Long id){
         User user = userService.findById(id);
-        if (user == null){
-            return new ResponseEntity<>("Пользователь не найден", HttpStatus.NOT_FOUND);
-        }
         UserPublicInfoDTO userInfo = userMapper.toUserPublicInfoDTO(user);
         return new ResponseEntity<>(userInfo, HttpStatus.OK);
     }
+
 }

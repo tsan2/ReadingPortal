@@ -1,5 +1,6 @@
 package ru.anastasya.readingportal.dto.validation;
 
+import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -12,10 +13,11 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = {})
 @NotBlank(message = "Название не может быть пустым")
 @Size(min = ValidationConstants.TITLE_MIN_SIZE, max = ValidationConstants.TITLE_MAX_SIZE, message = "Некорректная длина названия")
 public @interface ValidTitle {
     String message() default "Название не соответствует требованиям";
-    Class<?>[] group() default {};
+    Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

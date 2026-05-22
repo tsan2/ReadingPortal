@@ -2,16 +2,15 @@ package ru.anastasya.readingportal.controllers;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.ForgotPasswordDTO;
 import ru.anastasya.readingportal.dto.ResetPasswordDTO;
 import ru.anastasya.readingportal.dto.UserRegisterDTO;
+import ru.anastasya.readingportal.exceptions.ConflictException;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.services.PasswordResetCodeService;
 import ru.anastasya.readingportal.services.UserService;
@@ -25,11 +24,7 @@ public class AuthController {
     private final PasswordResetCodeService resetCodeService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody @Valid UserRegisterDTO userDTO, BindingResult bindingResult){
-        if (bindingResult.hasErrors()){
-            return new ResponseEntity<>(bindingResult.getAllErrors().toString(), HttpStatus.BAD_REQUEST);
-        }
-
+    public ResponseEntity<String> register(@RequestBody @Valid UserRegisterDTO userDTO){
         userService.registerUser(userDTO);
         return new ResponseEntity<>("Успешно", HttpStatus.OK);
     }

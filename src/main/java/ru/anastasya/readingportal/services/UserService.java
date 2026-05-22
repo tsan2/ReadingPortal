@@ -79,11 +79,7 @@ public class UserService {
     @Transactional
     public void changePassword(ResetPasswordDTO dto){
 
-        User user = userRepository.findByEmail(dto.email());
-
-        if (user==null){
-            throw new ValidationException("Неверный код или почта");
-        }
+        User user = userRepository.findByEmail(dto.email()).orElseThrow(() -> new ValidationException("Неверный код или почта"));
 
         Long UserId = user.getId();
 
@@ -117,10 +113,7 @@ public class UserService {
 
     @Transactional
     public void changeEmail(ChangeEmailDTO dto){
-        User user = userRepository.findById(dto.id()).orElse(null);
-        if (user==null){
-            throw new EntityNotFoundException("Пользователь не найден");
-        }
+        User user = userRepository.findById(dto.id()).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
         if (user.getEmail().equals(dto.newEmail())){
             return;
         }
@@ -151,12 +144,12 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public User findById(Long id){
-        return userRepository.findById(id).orElse(null);
+        return userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
     }
 
     @Transactional(readOnly = true)
     public User findUserByNickname(String nickname){
-        return userRepository.findByNickname(nickname);
+        return userRepository.findByNickname(nickname).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
     }
 
 //    public User findUserByTokenHash(String tokenHash){

@@ -14,6 +14,7 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
+@Constraint(validatedBy = {})
 @NotBlank(message = "Никнейм не может быть пустым")
 @Size(min = ValidationConstants.USER_NICKNAME_MIN_SIZE, max = ValidationConstants.USER_NICKNAME_MAX_SIZE,
         message = "Длина никнейма не соответствует требованиям")

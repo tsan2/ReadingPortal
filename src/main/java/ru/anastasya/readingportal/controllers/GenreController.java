@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.GenreRequestDTO;
 import ru.anastasya.readingportal.dto.GenreResponseDTO;
+import ru.anastasya.readingportal.exceptions.EntityNotFoundException;
 import ru.anastasya.readingportal.exceptions.ValidationException;
 import ru.anastasya.readingportal.mappers.GenreMapper;
 import ru.anastasya.readingportal.models.Genre;
@@ -30,7 +31,7 @@ public class GenreController {
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteGenre(@PathVariable Long id){
         if (!genreService.existsById(id)){
-            return new ResponseEntity<>("Жанр не найден", HttpStatus.NOT_FOUND);
+            throw new EntityNotFoundException("Жанр не найден");
         }
         genreService.deleteGenre(id);
         return new ResponseEntity<>("Успешно", HttpStatus.OK);
@@ -39,9 +40,6 @@ public class GenreController {
     @GetMapping("/{id}")
     public ResponseEntity<?> findById(@PathVariable Long id){
         Genre genre = genreService.findById(id);
-        if (genre == null){
-            return new ResponseEntity<>("Жанр не найден", HttpStatus.NOT_FOUND);
-        }
         GenreResponseDTO genreResponseDTO = genreMapper.toGenreResponseDTO(genre);
         return new ResponseEntity<>(genreResponseDTO, HttpStatus.OK);
     }
@@ -49,9 +47,6 @@ public class GenreController {
     @GetMapping(params = "name")
     public ResponseEntity<?> findByName(@RequestParam String name){
         Genre genre = genreService.findByName(name);
-        if (genre == null){
-            return new ResponseEntity<>("Жанр не найден", HttpStatus.NOT_FOUND);
-        }
         GenreResponseDTO genreResponseDTO = genreMapper.toGenreResponseDTO(genre);
         return new ResponseEntity<>(genreResponseDTO, HttpStatus.OK);
     }

@@ -17,8 +17,10 @@ public interface BookRepository extends JpaRepository<Book, Long> {
             LEFT JOIN b.authors a
             LEFT JOIN b.genres g WHERE
             (:authorsIds IS NULL OR a.id IN :authorsIds) AND
-            (:genresIds IS NULL OR g.id IN :genresIds)""")
-    Page<Book> findBooksByBookFilter(@Param("authorsIds") List<Long> authorsIds,
+            (:genresIds IS NULL OR g.id IN :genresIds) AND
+            (:title IS NULL OR b.title ILIKE %:title%)""")
+    Page<Book> findBooksByBookFilter(@Param("title") String title,
+                                     @Param("authorsIds") List<Long> authorsIds,
                                      @Param("genresIds") List<Long> genresIds,
                                      Pageable pageable);
 

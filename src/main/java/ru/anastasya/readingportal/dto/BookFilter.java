@@ -11,6 +11,7 @@ import java.util.List;
 @Setter
 public class BookFilter {
 
+    private String title;
     private List<Long> authorsIds;
     private List<Long> genresIds;
     private BookSortStrategy bookSortStrategy;

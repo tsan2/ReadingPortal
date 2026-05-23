@@ -4,11 +4,12 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,6 +17,7 @@ import java.util.Set;
 @Setter
 @ToString
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "books")
 public class Book {
 
@@ -25,9 +27,11 @@ public class Book {
     private Long id;
     @Column(nullable = false)
     private String title;
+    @LastModifiedDate
     @UpdateTimestamp
     @Column(name = "date_changed")
     private LocalDateTime dateChanged;
+    @CreatedDate
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -38,16 +42,16 @@ public class Book {
             joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "genre_id"))
     @ManyToMany(fetch = FetchType.LAZY)
-    private Set<Genre> genres;
+    private Set<Genre> genres = new HashSet<>();
 
     @JoinTable(name = "books_authors",
             joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     @ManyToMany(fetch = FetchType.LAZY)
-    private Set<User> authors;
+    private Set<User> authors = new HashSet<>();
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Volume> volumes;
+    private List<Volume> volumes = new ArrayList<>();
 
     @Override
     public boolean equals(Object obj) {

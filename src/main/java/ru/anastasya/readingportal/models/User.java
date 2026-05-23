@@ -6,10 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.BitSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -37,7 +34,7 @@ public class User implements Serializable {
     private Integer version;
 
     @ManyToMany(mappedBy = "authors", fetch = FetchType.LAZY)
-    private Set<Book> books;
+    private Set<Book> books = new HashSet<>();
 
     @Override
     public boolean equals(Object obj) {

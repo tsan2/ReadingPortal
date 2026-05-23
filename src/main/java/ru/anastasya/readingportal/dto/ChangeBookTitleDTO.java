@@ -11,7 +11,5 @@ public record ChangeBookTitleDTO(
         @ValidTitle
         String newTitle,
         @NotNull
-        Long currentUserId,
-        @NotNull
         Integer version) {
 }

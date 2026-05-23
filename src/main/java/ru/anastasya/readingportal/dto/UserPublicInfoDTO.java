@@ -4,5 +4,5 @@ import java.time.LocalDateTime;
 
 public record UserPublicInfoDTO(Long id,
                                 String nickname,
-                                LocalDateTime created_at) {
+                                LocalDateTime createdAt) {
 }

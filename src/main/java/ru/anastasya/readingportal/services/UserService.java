@@ -26,9 +26,9 @@ public class UserService {
     private final UserMapper userMapper;
 
     @Transactional
-    public void registerUser(UserRegisterDTO userRegisterDTO){
+    public ProfileDTO registerUser(UserRegisterDTO userRegisterDTO){
         User user = userMapper.fromUserRegisterDTO(userRegisterDTO);
-        String hashPassword = PasswordUtil.hashPassword(user.getPasswordHash());
+        String hashPassword = PasswordUtil.hashPassword(userRegisterDTO.password());
         user.setPasswordHash(hashPassword);
 
         if (userRepository.existsByEmail(user.getEmail())){
@@ -38,7 +38,8 @@ public class UserService {
             throw new ConflictException("Аккаунт с таким никнеймом уже существует");
         }
 
-        userRepository.save(user);
+        User newUser = userRepository.save(user);
+        return userMapper.toProfileDTO(newUser);
     }
 
     @Transactional(readOnly = true)
@@ -123,7 +124,9 @@ public class UserService {
         if (userRepository.existsByEmail(dto.newEmail())){
             throw new ConflictException("Такой адрес электронной почты уже занят");
         }
-
+        if (!user.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте снова");
+        }
         user.setEmail(dto.newEmail());
         userRepository.save(user);
     }

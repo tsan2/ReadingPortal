@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.GenreRequestDTO;
+import ru.anastasya.readingportal.dto.GenreResponseDTO;
 import ru.anastasya.readingportal.exceptions.EntityNotFoundException;
 import ru.anastasya.readingportal.exceptions.ValidationException;
 import ru.anastasya.readingportal.mappers.GenreMapper;
@@ -23,9 +24,10 @@ public class GenreService {
     private final GenreMapper genreMapper;
 
     @Transactional
-    public void createGenre(GenreRequestDTO genreRequestDTO){
+    public GenreResponseDTO createGenre(GenreRequestDTO genreRequestDTO){
         Genre genre = genreMapper.fromGenreRequestDTO(genreRequestDTO);
-        genreRepository.save(genre);
+        Genre newGenre = genreRepository.save(genre);
+        return genreMapper.toGenreResponseDTO(genre);
     }
 
     @Transactional

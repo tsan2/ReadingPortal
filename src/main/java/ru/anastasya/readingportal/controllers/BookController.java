@@ -8,10 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.*;
-import ru.anastasya.readingportal.models.Book;
 import ru.anastasya.readingportal.services.BookService;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Controller
@@ -22,15 +19,16 @@ public class BookController {
 
     //Временно айди автора через параметры
     @PostMapping("")
-    public ResponseEntity<BookResponseDTO> createBook(@Valid @RequestBody CreateBookDTO createBookDTO, @RequestParam Long authorId){
-        BookResponseDTO bookResponseDTO = bookService.createBookPlaceholder(createBookDTO, authorId);
+    public ResponseEntity<BookResponseDTO> createBook(@Valid @RequestBody CreateBookDTO createBookDTO, @RequestParam Long currentUserId){
+        BookResponseDTO bookResponseDTO = bookService.createBookPlaceholder(createBookDTO, currentUserId);
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.CREATED);
     }
 
-    @PatchMapping("/change-title")
-    public ResponseEntity<BookResponseDTO> changeTitle(@Valid @RequestBody ChangeBookTitleDTO bookTitleDTO,
-                                                       @RequestParam Long currentUserId){
-        BookResponseDTO bookResponseDTO = bookService.changeTitle(bookTitleDTO, currentUserId);
+    @PatchMapping("/{id}")
+    public ResponseEntity<BookResponseDTO> changeTitle(@Valid @RequestBody ChangeTitleDTO bookTitleDTO,
+                                                       @RequestParam Long currentUserId,
+                                                       @PathVariable Long id){
+        BookResponseDTO bookResponseDTO = bookService.changeTitle(bookTitleDTO, currentUserId, id);
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.OK);
     }
 

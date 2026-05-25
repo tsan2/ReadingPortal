@@ -21,10 +21,11 @@ public class UserController {
     private final UserMapper userMapper;
 
     //потом будет по авторизации
-    @PatchMapping("/change-password")
-    public ResponseEntity<String> changePasswordByOldPassword(@RequestBody @Valid ChangePasswordByOldPasswordDTO passwordDTO) {
+    @PatchMapping("me/password")
+    public ResponseEntity<MessageResponse> changePasswordByOldPassword(@RequestBody @Valid ChangePasswordByOldPasswordDTO passwordDTO) {
         userService.changePassword(passwordDTO);
-        return new ResponseEntity<>("Пароль изменен", HttpStatus.OK);
+
+        return new ResponseEntity<>(new MessageResponse("Пароль изменен"), HttpStatus.OK);
     }
 
     @GetMapping("")
@@ -34,22 +35,22 @@ public class UserController {
     }
 
     //потом будет по авторизации
-    @PatchMapping("/change-nickname")
-    public ResponseEntity<String> changeNickname(@RequestBody @Valid ChangeNicknameDTO nicknameDTO) {
+    @PatchMapping("me/nickname")
+    public ResponseEntity<MessageResponse> changeNickname(@RequestBody @Valid ChangeNicknameDTO nicknameDTO) {
         userService.changeNickname(nicknameDTO);
-        return new ResponseEntity<>("Успешно", HttpStatus.OK);
+        return new ResponseEntity<>(new MessageResponse("Никнейм изменен"), HttpStatus.OK);
     }
 
     //потом будет по авторизации
-    @PatchMapping("/change-email")
-    public ResponseEntity<String> changeEmail(@RequestBody @Valid ChangeEmailDTO emailDTO){
+    @PatchMapping("me/email")
+    public ResponseEntity<MessageResponse> changeEmail(@RequestBody @Valid ChangeEmailDTO emailDTO){
         userService.changeEmail(emailDTO);
-        return new ResponseEntity<>("Успешно", HttpStatus.OK);
+        return new ResponseEntity<>(new MessageResponse("Емейл изменен"), HttpStatus.OK);
     }
 
     //временная реализация пока нет авторизации
     @GetMapping("/profile/{id}")
-    private ResponseEntity<?> getProfile(@PathVariable Long id) {
+    private ResponseEntity<ProfileDTO> getProfile(@PathVariable Long id) {
         User user = userService.findById(id);
 
         ProfileDTO userProfile = userMapper.toProfileDTO(user);
@@ -58,14 +59,14 @@ public class UserController {
     }
 
     @GetMapping(params = "nickname")
-    public ResponseEntity<?> getInfoUserByNickname(@RequestParam String nickname) {
+    public ResponseEntity<UserPublicInfoDTO> getInfoUserByNickname(@RequestParam String nickname) {
         User user = userService.findUserByNickname(nickname);
         UserPublicInfoDTO userInfo = userMapper.toUserPublicInfoDTO(user);
         return new ResponseEntity<>(userInfo, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getInfoUser(@PathVariable Long id){
+    public ResponseEntity<UserPublicInfoDTO> getInfoUser(@PathVariable Long id){
         User user = userService.findById(id);
         UserPublicInfoDTO userInfo = userMapper.toUserPublicInfoDTO(user);
         return new ResponseEntity<>(userInfo, HttpStatus.OK);

@@ -1,15 +1,15 @@
 package ru.anastasya.readingportal.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.PositiveOrZero;
 import ru.anastasya.readingportal.dto.validation.ValidTitle;
 
-public record ChangeBookTitleDTO(
-        @NotNull
-        Long bookId,
+public record UpdateVolumeDTO(
         @ValidTitle
         String newTitle,
         @NotNull
-        Integer version) {
+        Integer version,
+        @PositiveOrZero
+        Double volumeNumber
+) {
 }

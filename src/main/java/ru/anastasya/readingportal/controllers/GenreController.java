@@ -23,29 +23,29 @@ public class GenreController {
     private final GenreMapper genreMapper;
 
     @PostMapping("")
-    public ResponseEntity<String> createGenre(@RequestBody @Valid GenreRequestDTO genreRequestDTO){
-        genreService.createGenre(genreRequestDTO);
-        return new ResponseEntity<>("Успешно", HttpStatus.OK);
+    public ResponseEntity<GenreResponseDTO> createGenre(@RequestBody @Valid GenreRequestDTO genreRequestDTO){
+        GenreResponseDTO genreResponseDTO = genreService.createGenre(genreRequestDTO);
+        return new ResponseEntity<>(genreResponseDTO, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteGenre(@PathVariable Long id){
+    public ResponseEntity<Void> deleteGenre(@PathVariable Long id){
         if (!genreService.existsById(id)){
             throw new EntityNotFoundException("Жанр не найден");
         }
         genreService.deleteGenre(id);
-        return new ResponseEntity<>("Успешно", HttpStatus.OK);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable Long id){
+    public ResponseEntity<GenreResponseDTO> findById(@PathVariable Long id){
         Genre genre = genreService.findById(id);
         GenreResponseDTO genreResponseDTO = genreMapper.toGenreResponseDTO(genre);
         return new ResponseEntity<>(genreResponseDTO, HttpStatus.OK);
     }
 
     @GetMapping(params = "name")
-    public ResponseEntity<?> findByName(@RequestParam String name){
+    public ResponseEntity<GenreResponseDTO> findByName(@RequestParam String name){
         Genre genre = genreService.findByName(name);
         GenreResponseDTO genreResponseDTO = genreMapper.toGenreResponseDTO(genre);
         return new ResponseEntity<>(genreResponseDTO, HttpStatus.OK);

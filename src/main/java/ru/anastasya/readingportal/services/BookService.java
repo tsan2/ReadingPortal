@@ -17,8 +17,6 @@ import ru.anastasya.readingportal.repositories.BookRepository;
 import ru.anastasya.readingportal.repositories.GenreRepository;
 import ru.anastasya.readingportal.repositories.UserRepository;
 
-import java.util.Objects;
-
 @AllArgsConstructor
 @Service
 public class BookService {
@@ -43,8 +41,8 @@ public class BookService {
 
     //пока будет такое dto, потом там будет только id книги, новое название, версия. currentUserId через авторизацию
     @Transactional
-    public BookResponseDTO changeTitle(ChangeBookTitleDTO dto, Long currentUserId){
-        Book book = bookRepository.findById(dto.bookId()).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+    public BookResponseDTO changeTitle(ChangeTitleDTO dto, Long currentUserId, Long bookId){
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
         checkAuthority(book, currentUserId);
 
         if (!book.getVersion().equals(dto.version())){

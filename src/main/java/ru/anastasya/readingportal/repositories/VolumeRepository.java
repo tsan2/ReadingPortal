@@ -10,7 +10,7 @@ import java.util.List;
 public interface VolumeRepository extends JpaRepository<Volume, Long> {
 
     @Query("SELECT MAX(v.volumeMainNumber) FROM Volume v WHERE v.book.id = :bookId AND v.isDefault = false")
-    int findLastMainNumberByBookId(@Param("bookId") Long bookId);
+    Integer findLastMainNumberByBookId(@Param("bookId") Long bookId);
 
     List<Volume> findAllByBookIdAndIsDefaultFalse(Long bookId);
     Volume findByBookIdAndIsDefaultTrue(Long bookId);

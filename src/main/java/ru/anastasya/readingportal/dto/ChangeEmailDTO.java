@@ -11,5 +11,7 @@ public record ChangeEmailDTO(
         @NotBlank
         String password,
         @ValidUserEmail
-        String newEmail) {
+        String newEmail,
+        @NotNull
+        int version) {
 }

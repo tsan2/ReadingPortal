@@ -7,13 +7,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import ru.anastasya.readingportal.dto.ForgotPasswordDTO;
-import ru.anastasya.readingportal.dto.ResetPasswordDTO;
-import ru.anastasya.readingportal.dto.UserRegisterDTO;
+import ru.anastasya.readingportal.dto.*;
 import ru.anastasya.readingportal.exceptions.ConflictException;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.services.PasswordResetCodeService;
 import ru.anastasya.readingportal.services.UserService;
+
+import java.time.OffsetDateTime;
 
 @AllArgsConstructor
 @RestController
@@ -24,24 +24,27 @@ public class AuthController {
     private final PasswordResetCodeService resetCodeService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody @Valid UserRegisterDTO userDTO){
-        userService.registerUser(userDTO);
-        return new ResponseEntity<>("Успешно", HttpStatus.OK);
+    public ResponseEntity<ProfileDTO> register(@RequestBody @Valid UserRegisterDTO userDTO){
+        ProfileDTO user = userService.registerUser(userDTO);
+        return new ResponseEntity<>(user, HttpStatus.CREATED);
     }
 
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestBody @Valid ForgotPasswordDTO passwordDTO){
+    public ResponseEntity<MessageResponse> forgotPassword(@RequestBody @Valid ForgotPasswordDTO passwordDTO){
         resetCodeService.sendCode(passwordDTO.email());
 
-        return new ResponseEntity<>("Успешно", HttpStatus.OK);
+        MessageResponse messageResponse = new MessageResponse("""
+                Если пользователь с такой почтой зарегистрирован,
+                код отправлен на почту""");
+        return new ResponseEntity<>(messageResponse, HttpStatus.ACCEPTED);
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody @Valid ResetPasswordDTO resetPasswordDTO){
-
+    public ResponseEntity<MessageResponse> resetPassword(@RequestBody @Valid ResetPasswordDTO resetPasswordDTO){
         userService.changePassword(resetPasswordDTO);
 
-        return new ResponseEntity<>("Успешно", HttpStatus.OK);
+        MessageResponse messageResponse = new MessageResponse("Пароль изменен");
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 }

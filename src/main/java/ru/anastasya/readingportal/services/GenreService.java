@@ -32,27 +32,32 @@ public class GenreService {
 
     @Transactional
     public void deleteGenre(Long id){
+        if (!existsById(id)){
+            throw new EntityNotFoundException("Жанр не найден");
+        }
         genreRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
-    public Genre findById(Long id){
-        return genreRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+    public GenreResponseDTO findById(Long id){
+        Genre genre = genreRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        return genreMapper.toGenreResponseDTO(genre);
     }
 
     @Transactional(readOnly = true)
-    public Genre findByName(String name){
-        return genreRepository.findByName(name).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+    public GenreResponseDTO findByName(String name){
+        Genre genre = genreRepository.findByName(name).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        return genreMapper.toGenreResponseDTO(genre);
     }
 
     @Transactional(readOnly = true)
-    public Page<Genre> findAll(int size, int page){
+    public Page<GenreResponseDTO> findAll(int size, int page){
         Pageable pageable = PageRequest.of(page-1, size);
-        return genreRepository.findAll(pageable);
+        return genreRepository.findAll(pageable).map(genreMapper :: toGenreResponseDTO);
     }
 
     @Transactional(readOnly = true)
-    public boolean existsById(Long id){
+    private boolean existsById(Long id){
         return genreRepository.existsById(id);
     }
 

@@ -1,5 +1,8 @@
 package ru.anastasya.readingportal.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.apache.coyote.Response;
@@ -23,13 +26,21 @@ public class AuthController {
     private final UserService userService;
     private final PasswordResetCodeService resetCodeService;
 
+    @Tag(name = "Авторизация", description = "Методы для работы с регистрацией и авторизацией пользователей")
+    @Operation(summary = "Зарегистрироваться")
+    @ApiResponse(responseCode = "201", description = "Объект успешно создан")
+    @ApiResponse(responseCode = "404", description = "Аккаунт с такой почтой или никнеймом уже существует")
+    @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @PostMapping("/register")
     public ResponseEntity<ProfileDTO> register(@RequestBody @Valid UserRegisterDTO userDTO){
         ProfileDTO user = userService.registerUser(userDTO);
         return new ResponseEntity<>(user, HttpStatus.CREATED);
     }
 
-
+    @Tag(name = "Забыл пароль", description = "Методы для восстановления пароля")
+    @ApiResponse(responseCode = "202", description = "Если пользователь с такой почтой зарегистрирован, код отправлен")
+    @ApiResponse(responseCode = "400", description = "Неверный запрос")
+    @Operation(summary = "Получить код для смены пароля")
     @PostMapping("/forgot-password")
     public ResponseEntity<MessageResponse> forgotPassword(@RequestBody @Valid ForgotPasswordDTO passwordDTO){
         resetCodeService.sendCode(passwordDTO.email());
@@ -40,6 +51,10 @@ public class AuthController {
         return new ResponseEntity<>(messageResponse, HttpStatus.ACCEPTED);
     }
 
+    @Tag(name = "Забыл пароль", description = "Методы для восстановления пароля")
+    @ApiResponse(responseCode = "200", description = "Успешно")
+    @ApiResponse(responseCode = "400", description = "Неверный запрос, неверный код или почта")
+    @Operation(summary = "Восстановить пароль")
     @PostMapping("/reset-password")
     public ResponseEntity<MessageResponse> resetPassword(@RequestBody @Valid ResetPasswordDTO resetPasswordDTO){
         userService.changePassword(resetPasswordDTO);

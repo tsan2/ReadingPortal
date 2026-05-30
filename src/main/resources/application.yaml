@@ -21,3 +21,6 @@ server:
   error:
     include-message: always
     include-exception: true
+springdoc:
+  swagger-ui:
+    show-common-extensions=true:

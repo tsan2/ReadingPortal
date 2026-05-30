@@ -17,6 +17,9 @@ public class LogsInterceptor implements HandlerInterceptor {
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable Exception ex) throws Exception {
         long timeExecution = System.currentTimeMillis() - (long) request.getAttribute("startTime");
+        if (!(handler instanceof HandlerMethod)){
+            return;
+        }
         HandlerMethod handlerMethod = (HandlerMethod) handler;
 
         System.out.println("По запросу на путь " + request.getRequestURI() +

@@ -6,10 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.anastasya.readingportal.dto.VolumeResponseDTO;
 
+import java.util.List;
+
 @Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "volumes")
 public class Volume {
 
     @Id
@@ -28,6 +31,18 @@ public class Volume {
     private Book book;
     @Version
     private Integer version;
+    @OneToMany(mappedBy = "volume", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Chapter> chapters;
+
+    public void addChapter(Chapter chapter){
+        chapters.add(chapter);
+        chapter.setVolume(this);
+    }
+
+    public void removeChapter(Chapter chapter){
+        chapters.remove(chapter);
+        chapter.setVolume(null);
+    }
 
     public Volume(String title, int volumeMainNumber, int volumeSubNumber, boolean isDefault) {
         this.title = title;

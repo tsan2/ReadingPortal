@@ -1,6 +1,10 @@
 package ru.anastasya.readingportal.configs;
 
 import io.swagger.v3.core.converter.ModelConverters;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import org.springdoc.core.customizers.OpenApiCustomizer;
@@ -11,6 +15,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import ru.anastasya.readingportal.dto.ErrorResponse;
 import ru.anastasya.readingportal.interceptors.LogsInterceptor;
 
+@OpenAPIDefinition(security = @SecurityRequirement(name = "basicAuth"))
+@SecurityScheme(name = "basicAuth",
+type = SecuritySchemeType.HTTP,
+scheme = "basic")
 @Configuration
 public class AppConfig implements WebMvcConfigurer {
 

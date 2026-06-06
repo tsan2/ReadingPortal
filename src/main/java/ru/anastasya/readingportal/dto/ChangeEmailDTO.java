@@ -8,9 +8,6 @@ import ru.anastasya.readingportal.dto.validation.ValidUserEmail;
 
 @Schema(description = "Смена емейла")
 public record ChangeEmailDTO(
-        @Schema(description = "айди пользователя", example = "1")
-        @NotNull
-        Long id,
         @Schema(description = "пароль", example = "1234")
         @NotBlank
         String password,

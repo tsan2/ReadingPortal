@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Data
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name="password_reset_codes")
 public class PasswordResetCode {
 
@@ -23,6 +26,7 @@ public class PasswordResetCode {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
     @Column(name = "created_at", updatable = false)
+    @CreatedDate
     @CreationTimestamp
     private LocalDateTime createdAt;
 

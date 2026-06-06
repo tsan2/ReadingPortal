@@ -3,6 +3,7 @@ package ru.anastasya.readingportal.services;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.*;
@@ -10,25 +11,27 @@ import ru.anastasya.readingportal.exceptions.*;
 import ru.anastasya.readingportal.mappers.UserMapper;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.repositories.UserRepository;
-import ru.anastasya.readingportal.utils.PasswordUtil;
 
 @Service
 public class UserService {
 
-    UserService(UserRepository userRepository, PasswordResetCodeService resetCodeService, UserMapper userMapper){
+    public UserService(UserRepository userRepository, PasswordResetCodeService resetCodeService,
+                       UserMapper userMapper, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.resetCodeService = resetCodeService;
         this.userMapper = userMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     private final UserRepository userRepository;
     private final PasswordResetCodeService resetCodeService;
     private final UserMapper userMapper;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Transactional
     public ProfileDTO registerUser(UserRegisterDTO userRegisterDTO){
         User user = userMapper.fromUserRegisterDTO(userRegisterDTO);
-        String hashPassword = PasswordUtil.hashPassword(userRegisterDTO.password());
+        String hashPassword = passwordEncoder.encode(userRegisterDTO.password());
         user.setPasswordHash(hashPassword);
 
         if (userRepository.existsByEmail(user.getEmail())){
@@ -43,32 +46,38 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public User authorizationUser(String emailOrNickname, String password){
-
-        User user = userRepository.findByEmailOrNickname(emailOrNickname);
-        if (user == null){
-            throw new AuthenticationException("Неверный логин или пароль");
-        }
-
-        if(PasswordUtil.checkPassword(password, user.getPasswordHash())){
-            user.setPasswordHash(null);
-            return user;
-        }
-        else{
-            throw new AuthenticationException("Неверный логин или пароль");
-        }
-
+    public ProfileDTO login(Long id){
+        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        return userMapper.toProfileDTO(user);
     }
+
+//    @Transactional(readOnly = true)
+//    public User authorizationUser(String emailOrNickname, String password){
+//
+//        User user = userRepository.findByEmailOrNickname(emailOrNickname);
+//        if (user == null){
+//            throw new AuthenticationException("Неверный логин или пароль");
+//        }
+//
+//        if(passwordEncoder.matches(password, user.getPasswordHash())){
+//            user.setPasswordHash(null);
+//            return user;
+//        }
+//        else{
+//            throw new AuthenticationException("Неверный логин или пароль");
+//        }
+//
+//    }
 
     @Transactional
     public void changePassword(ChangePasswordByOldPasswordDTO dto){
 
         User user = userRepository.findById(dto.id()).orElseThrow(() -> new EntityNotFoundException("Пользователь с таким id не найден"));
-        if (PasswordUtil.checkPassword(dto.oldPassword(), user.getPasswordHash())){
+        if (passwordEncoder.matches(dto.oldPassword(), user.getPasswordHash())){
             if (!user.getVersion().equals(dto.version())){
                 throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
             }
-            String newPasswordHash = PasswordUtil.hashPassword(dto.newPassword());
+            String newPasswordHash = passwordEncoder.encode(dto.newPassword());
             user.setPasswordHash(newPasswordHash);
         }
         else{
@@ -88,15 +97,15 @@ public class UserService {
             throw new ValidationException("Неверный код или почта");
         }
 
-        String hashPassword = PasswordUtil.hashPassword(dto.newPassword());
+        String hashPassword = passwordEncoder.encode(dto.newPassword());
 
         user.setPasswordHash(hashPassword);
         resetCodeService.deleteCodes(UserId);
     }
 
     @Transactional
-    public void changeNickname(ChangeNicknameDTO dto){
-        User user = userRepository.findById(dto.id()).orElse(null);
+    public void changeNickname(ChangeNicknameDTO dto, Long currentUserId){
+        User user = userRepository.findById(currentUserId).orElse(null);
         if (user==null){
             throw new EntityNotFoundException("Пользователь не найден");
         }
@@ -113,12 +122,12 @@ public class UserService {
     }
 
     @Transactional
-    public void changeEmail(ChangeEmailDTO dto){
-        User user = userRepository.findById(dto.id()).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+    public void changeEmail(ChangeEmailDTO dto, Long currentUserId){
+        User user = userRepository.findById(currentUserId).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
         if (user.getEmail().equals(dto.newEmail())){
             return;
         }
-        if (!PasswordUtil.checkPassword(dto.password(), user.getPasswordHash())){
+        if (!passwordEncoder.matches(dto.password(), user.getPasswordHash())){
             throw new ValidationException("Пароль неверный");
         }
         if (userRepository.existsByEmail(dto.newEmail())){

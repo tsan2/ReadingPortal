@@ -8,9 +8,6 @@ import ru.anastasya.readingportal.dto.validation.ValidUserNickname;
 
 @Schema(description = "Смена никнейма")
 public record ChangeNicknameDTO(
-        @Schema(description = "айди пользователя", example = "1")
-        @NotNull
-        Long id,
         @Schema(description = "новый никнейм", example = "tsan20")
         @ValidUserNickname
         String newNickname,

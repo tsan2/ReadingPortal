@@ -3,6 +3,8 @@ package ru.anastasya.readingportal.models;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -14,6 +16,7 @@ import java.util.*;
 @Getter
 @ToString
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name="users")
 public class User implements Serializable {
 
@@ -27,6 +30,7 @@ public class User implements Serializable {
     private String email;
     @Column(name = "password_hash")
     private String passwordHash;
+    @CreatedDate
     @Column(name = "created_at", updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;

@@ -11,10 +11,12 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.*;
+import ru.anastasya.readingportal.security.CustomUserDetails;
 import ru.anastasya.readingportal.services.BookService;
 
 @AllArgsConstructor
@@ -35,9 +37,8 @@ public class BookController {
     @Operation(summary = "Создать книгу")
     @PostMapping("")
     public ResponseEntity<BookResponseDTO> createBook(@Valid @RequestBody CreateBookDTO createBookDTO,
-                                                      @Parameter(description = "айди текущего пользователя", example = "1")
-                                                      @RequestParam @Min(1) Long currentUserId){
-        BookResponseDTO bookResponseDTO = bookService.createBookPlaceholder(createBookDTO, currentUserId);
+                                                      @AuthenticationPrincipal CustomUserDetails userDetails){
+        BookResponseDTO bookResponseDTO = bookService.createBookPlaceholder(createBookDTO, userDetails.getId());
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.CREATED);
     }
 
@@ -48,11 +49,10 @@ public class BookController {
     @Operation(summary = "Изменить название книги")
     @PatchMapping("/{id}")
     public ResponseEntity<BookResponseDTO> changeTitle(@Valid @RequestBody ChangeTitleDTO bookTitleDTO,
-                                                       @Parameter(description = "айди текущего пользователя", example = "1")
-                                                       @RequestParam @Min(1) Long currentUserId,
+                                                       @AuthenticationPrincipal CustomUserDetails userDetails,
                                                        @Parameter(description = "айди книги", example = "1")
                                                        @PathVariable @Min(1) Long id){
-        BookResponseDTO bookResponseDTO = bookService.changeTitle(bookTitleDTO, currentUserId, id);
+        BookResponseDTO bookResponseDTO = bookService.changeTitle(bookTitleDTO, userDetails.getId(), id);
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.OK);
     }
 
@@ -68,9 +68,8 @@ public class BookController {
                                                      @PathVariable @Min(1) Long authorId,
                                                      @Parameter(description = "версия записи", example = "1")
                                                      @RequestParam @Min(0) int version,
-                                                     @Parameter(description = "айди текущего пользователя", example = "1")
-                                                     @RequestParam @Min(1) Long currentUserId){
-        BookResponseDTO bookResponseDTO = bookService.addAuthorToBook(bookId, authorId, version, currentUserId);
+                                                     @AuthenticationPrincipal CustomUserDetails userDetails){
+        BookResponseDTO bookResponseDTO = bookService.addAuthorToBook(bookId, authorId, version, userDetails.getId());
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.CREATED);
     }
 
@@ -86,9 +85,8 @@ public class BookController {
                                                     @PathVariable @Min(1) Long genreId,
                                                     @Parameter(description = "версия записи", example = "1")
                                                     @RequestParam @Min(0) int version,
-                                                    @Parameter(description = "айди текущего пользователя", example = "1")
-                                                    @RequestParam @Min(1) Long currentUserId){
-        BookResponseDTO bookResponseDTO = bookService.addGenreToBook(bookId, genreId, version, currentUserId);
+                                                    @AuthenticationPrincipal CustomUserDetails userDetails){
+        BookResponseDTO bookResponseDTO = bookService.addGenreToBook(bookId, genreId, version, userDetails.getId());
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.CREATED);
     }
 
@@ -105,9 +103,8 @@ public class BookController {
                                                         @PathVariable @Min(1) Long authorId,
                                                         @Parameter(description = "версия записи", example = "1")
                                                         @RequestParam @Min(0) int version,
-                                                        @Parameter(description = "айди текущего пользователя", example = "1")
-                                                        @RequestParam @Min(1) Long currentUserId){
-        BookResponseDTO bookResponseDTO = bookService.deleteAuthorFromBook(bookId, authorId, version, currentUserId);
+                                                        @AuthenticationPrincipal CustomUserDetails userDetails){
+        BookResponseDTO bookResponseDTO = bookService.deleteAuthorFromBook(bookId, authorId, version, userDetails.getId());
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.OK);
     }
 
@@ -123,9 +120,8 @@ public class BookController {
                                                        @PathVariable @Min(1) Long genreId,
                                                        @Parameter(description = "версия записи", example = "1")
                                                        @RequestParam @Min(0) int version,
-                                                       @Parameter(description = "айди текущего пользователя", example = "1")
-                                                       @RequestParam @Min(1) Long currentUserId){
-        BookResponseDTO bookResponseDTO = bookService.deleteGenreFromBook(bookId, genreId, version, currentUserId);
+                                                       @AuthenticationPrincipal CustomUserDetails userDetails){
+        BookResponseDTO bookResponseDTO = bookService.deleteGenreFromBook(bookId, genreId, version, userDetails.getId());
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.OK);
     }
 
@@ -176,11 +172,10 @@ public class BookController {
     @ApiResponse(responseCode = "404", description = "Книга не найдена")
     @Operation(summary = "Удалить книгу")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@Parameter(description = "айди текущего пользователя", example = "1")
-                                       @RequestParam @Min(1) Long currentUserId,
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal CustomUserDetails userDetails,
                                        @Parameter(description = "айди книги", example = "1")
                                        @PathVariable @Min(1) Long id){
-        bookService.deleteBook(id, currentUserId);
+        bookService.deleteBook(id, userDetails.getId());
         return ResponseEntity.noContent().build();
     }
 

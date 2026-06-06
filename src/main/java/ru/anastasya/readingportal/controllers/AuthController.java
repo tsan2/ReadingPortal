@@ -8,11 +8,13 @@ import lombok.AllArgsConstructor;
 import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.*;
 import ru.anastasya.readingportal.exceptions.ConflictException;
 import ru.anastasya.readingportal.models.User;
+import ru.anastasya.readingportal.security.CustomUserDetails;
 import ru.anastasya.readingportal.services.PasswordResetCodeService;
 import ru.anastasya.readingportal.services.UserService;
 
@@ -35,6 +37,16 @@ public class AuthController {
     public ResponseEntity<ProfileDTO> register(@RequestBody @Valid UserRegisterDTO userDTO){
         ProfileDTO user = userService.registerUser(userDTO);
         return new ResponseEntity<>(user, HttpStatus.CREATED);
+    }
+
+    @Tag(name = "Авторизация", description = "Методы для работы с регистрацией и авторизацией пользователей")
+    @Operation(summary = "Войти в аккаунт")
+    @ApiResponse(responseCode = "200", description = "Успешно")
+    @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    @PostMapping("/login")
+    public ResponseEntity<ProfileDTO> login(@AuthenticationPrincipal CustomUserDetails userDetails){
+        ProfileDTO profileDTO = userService.login(userDetails.getId());
+        return new ResponseEntity<>(profileDTO, HttpStatus.OK);
     }
 
     @Tag(name = "Забыл пароль", description = "Методы для восстановления пароля")

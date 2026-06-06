@@ -2,19 +2,17 @@ package ru.anastasya.readingportal.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.*;
+import ru.anastasya.readingportal.security.CustomUserDetails;
 import ru.anastasya.readingportal.services.VolumeService;
-import ru.anastasya.readingportal.utils.OperationResult;
 
 import java.util.List;
 
@@ -34,11 +32,10 @@ public class VolumeController {
     @Operation(summary = "Создать том")
     @PostMapping("/book/{id}/volume")
     public ResponseEntity<VolumeResponseDTO> createVolume(@RequestBody VolumeRequest volumeRequest,
-                                                          @Parameter(description = "айди текущего пользователя", example = "1")
-                                                          @RequestParam @Min(1) Long currentUserId,
+                                                          @AuthenticationPrincipal CustomUserDetails userDetails,
                                                           @Parameter(description = "айди книги", example = "1")
                                                           @PathVariable @Min(1) Long bookId){
-        VolumeResponseDTO volumeResponseDTO = volumeService.createVolume(volumeRequest, currentUserId, bookId);
+        VolumeResponseDTO volumeResponseDTO = volumeService.createVolume(volumeRequest, userDetails.getId(), bookId);
         return new ResponseEntity<>(volumeResponseDTO, HttpStatus.CREATED);
     }
 
@@ -49,11 +46,10 @@ public class VolumeController {
     @Operation(summary = "Изменить название или номер тома")
     @PatchMapping("volume/{id}")
     public ResponseEntity<VolumeResponseDTO> updateVolume(@RequestBody UpdateVolumeDTO updateVolumeDTO,
-                                                          @Parameter(description = "айди текущего пользователя", example = "1")
-                                                          @RequestParam @Min(1) Long currentUserId,
+                                                          @AuthenticationPrincipal CustomUserDetails userDetails,
                                                           @Parameter(description = "айди тома", example = "1")
                                                           @PathVariable @Min(1) Long id){
-        VolumeResponseDTO volumeResponseDTO = volumeService.updateVolume(updateVolumeDTO, currentUserId, id);
+        VolumeResponseDTO volumeResponseDTO = volumeService.updateVolume(updateVolumeDTO, userDetails.getId(), id);
         return new ResponseEntity<>(volumeResponseDTO, HttpStatus.OK);
     }
 
@@ -84,11 +80,10 @@ public class VolumeController {
     @ApiResponse(responseCode = "404", description = "Том не найден")
     @Operation(summary = "Удалить том")
     @DeleteMapping("/volume/{id}")
-    public ResponseEntity<Void> deleteVolume(@Parameter(description = "айди текущего пользователя", example = "1")
-                                             @RequestParam @Min(1) Long currentUserId,
+    public ResponseEntity<Void> deleteVolume(@AuthenticationPrincipal CustomUserDetails userDetails,
                                              @Parameter(description = "айди тома", example = "1")
                                              @PathVariable @Min(1) Long id){
-        volumeService.deleteVolume(id, currentUserId);
+        volumeService.deleteVolume(id, userDetails.getId());
         return ResponseEntity.noContent().build();
     }
 }

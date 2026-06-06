@@ -2,24 +2,22 @@ package ru.anastasya.readingportal.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.*;
-import ru.anastasya.readingportal.exceptions.EntityNotFoundException;
 import ru.anastasya.readingportal.mappers.UserMapper;
 import ru.anastasya.readingportal.models.User;
+import ru.anastasya.readingportal.security.CustomUserDetails;
 import ru.anastasya.readingportal.services.UserService;
 
 @Tag(name = "Пользователи",
@@ -38,7 +36,7 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные")
     @Operation(summary = "Сменить пароль по старому паролю")
-    @PatchMapping("me/password")
+    @PatchMapping("/me/password")
     public ResponseEntity<MessageResponse> changePasswordByOldPassword(@RequestBody @Valid ChangePasswordByOldPasswordDTO passwordDTO) {
         userService.changePassword(passwordDTO);
 
@@ -61,9 +59,10 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Успешно")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @Operation(summary = "Сменить никнейм")
-    @PatchMapping("me/nickname")
-    public ResponseEntity<MessageResponse> changeNickname(@RequestBody @Valid ChangeNicknameDTO nicknameDTO) {
-        userService.changeNickname(nicknameDTO);
+    @PatchMapping("/me/nickname")
+    public ResponseEntity<MessageResponse> changeNickname(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                          @RequestBody @Valid ChangeNicknameDTO nicknameDTO) {
+        userService.changeNickname(nicknameDTO, userDetails.getId());
         return new ResponseEntity<>(new MessageResponse("Никнейм изменен"), HttpStatus.OK);
     }
 
@@ -72,21 +71,20 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "Неверный запрос или неверный пароль")
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные или емейл занят")
     @Operation(summary = "Сменить адрес электронной почты")
-    @PatchMapping("me/email")
-    public ResponseEntity<MessageResponse> changeEmail(@RequestBody @Valid ChangeEmailDTO emailDTO){
-        userService.changeEmail(emailDTO);
+    @PatchMapping("/me/email")
+    public ResponseEntity<MessageResponse> changeEmail(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                       @RequestBody @Valid ChangeEmailDTO emailDTO){
+        userService.changeEmail(emailDTO, userDetails.getId());
         return new ResponseEntity<>(new MessageResponse("Емейл изменен"), HttpStatus.OK);
     }
 
     //временная реализация пока нет авторизации
     @ApiResponse(responseCode = "200", description = "Успешно")
-    @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "404", description = "Пользователь не найден")
     @Operation(summary = "Получить свой профиль")
-    @GetMapping("/profile/{id}")
-    public ResponseEntity<ProfileDTO> getProfile(@Parameter(description = "ваш айди", example = "1")
-                                                 @PathVariable @Min(1) Long id) {
-        User user = userService.findById(id);
+    @GetMapping("/profile")
+    public ResponseEntity<ProfileDTO> getProfile(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        User user = userService.findById(userDetails.getId());
 
         ProfileDTO userProfile = userMapper.toProfileDTO(user);
 
@@ -104,6 +102,7 @@ public class UserController {
         UserPublicInfoDTO userInfo = userMapper.toUserPublicInfoDTO(user);
         return new ResponseEntity<>(userInfo, HttpStatus.OK);
     }
+
 
     @ApiResponse(responseCode = "200", description = "Успешно")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")

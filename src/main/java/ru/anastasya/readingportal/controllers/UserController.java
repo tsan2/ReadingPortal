@@ -37,8 +37,9 @@ public class UserController {
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные")
     @Operation(summary = "Сменить пароль по старому паролю")
     @PatchMapping("/me/password")
-    public ResponseEntity<MessageResponse> changePasswordByOldPassword(@RequestBody @Valid ChangePasswordByOldPasswordDTO passwordDTO) {
-        userService.changePassword(passwordDTO);
+    public ResponseEntity<MessageResponse> changePasswordByOldPassword(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                                       @RequestBody @Valid ChangePasswordByOldPasswordDTO passwordDTO) {
+        userService.changePassword(passwordDTO, userDetails.getId());
 
         return new ResponseEntity<>(new MessageResponse("Пароль изменен"), HttpStatus.OK);
     }

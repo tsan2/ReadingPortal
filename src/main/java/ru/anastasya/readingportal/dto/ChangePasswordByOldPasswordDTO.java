@@ -7,9 +7,6 @@ import jakarta.validation.constraints.Size;
 
 @Schema(description = "Смена пароля по старому паролю")
 public record ChangePasswordByOldPasswordDTO(
-        @Schema(description = "айди пользователя", example = "1")
-        @NotNull
-        Long id,
         @Schema(description = "старый пароль", example = "1234")
         @NotEmpty
         String oldPassword,

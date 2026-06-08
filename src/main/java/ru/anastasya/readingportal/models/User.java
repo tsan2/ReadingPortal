@@ -40,6 +40,10 @@ public class User implements Serializable {
     @ManyToMany(mappedBy = "authors", fetch = FetchType.LAZY)
     private Set<Book> books = new HashSet<>();
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @Enumerated(EnumType.STRING)
+    private Set<Role> roles;
+
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;

@@ -1,5 +1,6 @@
 package ru.anastasya.readingportal.services;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,8 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.*;
 import ru.anastasya.readingportal.exceptions.*;
 import ru.anastasya.readingportal.mappers.UserMapper;
+import ru.anastasya.readingportal.models.Role;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.repositories.UserRepository;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class UserService {
@@ -28,6 +33,11 @@ public class UserService {
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder;
 
+    @Value("${app.admin.email}")
+    private String ADMIN_EMAIL;
+    @Value("${app.admin.password}")
+    private String ADMIN_PASSWORD;
+
     @Transactional
     public ProfileDTO registerUser(UserRegisterDTO userRegisterDTO){
         User user = userMapper.fromUserRegisterDTO(userRegisterDTO);
@@ -41,6 +51,7 @@ public class UserService {
             throw new ConflictException("Аккаунт с таким никнеймом уже существует");
         }
 
+        user.setRoles(Set.of(Role.USER));
         User newUser = userRepository.save(user);
         return userMapper.toProfileDTO(newUser);
     }
@@ -70,9 +81,12 @@ public class UserService {
 //    }
 
     @Transactional
-    public void changePassword(ChangePasswordByOldPasswordDTO dto){
+    public void changePassword(ChangePasswordByOldPasswordDTO dto, Long currentUserId){
 
-        User user = userRepository.findById(dto.id()).orElseThrow(() -> new EntityNotFoundException("Пользователь с таким id не найден"));
+        User user = userRepository.findById(currentUserId).orElseThrow(() -> new EntityNotFoundException("Пользователь с таким id не найден"));
+        if (passwordEncoder.matches(ADMIN_PASSWORD, user.getPasswordHash())){
+            throw new ForbiddenException("Вы не можете изменять пароль на админ аккаунте");
+        }
         if (passwordEncoder.matches(dto.oldPassword(), user.getPasswordHash())){
             if (!user.getVersion().equals(dto.version())){
                 throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
@@ -90,6 +104,9 @@ public class UserService {
     public void changePassword(ResetPasswordDTO dto){
 
         User user = userRepository.findByEmail(dto.email()).orElseThrow(() -> new ValidationException("Неверный код или почта"));
+        if (passwordEncoder.matches(ADMIN_PASSWORD, user.getPasswordHash())){
+            throw new ForbiddenException("Вы не можете изменять пароль на админ аккаунте");
+        }
 
         Long UserId = user.getId();
 
@@ -109,6 +126,9 @@ public class UserService {
         if (user==null){
             throw new EntityNotFoundException("Пользователь не найден");
         }
+        if (user.getNickname().equals("admin")){
+            throw new ForbiddenException("Вы не можете изменять никнейм на админ аккаунте");
+        }
         if (user.getNickname().equals(dto.newNickname())){
             return;
         }
@@ -126,6 +146,9 @@ public class UserService {
         User user = userRepository.findById(currentUserId).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
         if (user.getEmail().equals(dto.newEmail())){
             return;
+        }
+        if (user.getEmail().equals(ADMIN_EMAIL)){
+            throw new ForbiddenException("Вы не можете изменять емейл на админ аккаунте");
         }
         if (!passwordEncoder.matches(dto.password(), user.getPasswordHash())){
             throw new ValidationException("Пароль неверный");

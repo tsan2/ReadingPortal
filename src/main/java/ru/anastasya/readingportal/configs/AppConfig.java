@@ -15,10 +15,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import ru.anastasya.readingportal.dto.ErrorResponse;
 import ru.anastasya.readingportal.interceptors.LogsInterceptor;
 
-@OpenAPIDefinition(security = @SecurityRequirement(name = "basicAuth"))
-@SecurityScheme(name = "basicAuth",
+@OpenAPIDefinition(security = @SecurityRequirement(name = "bearerAuth"))
+@SecurityScheme(name = "bearerAuth",
 type = SecuritySchemeType.HTTP,
-scheme = "basic")
+scheme = "bearer",
+bearerFormat = "JWT")
 @Configuration
 public class AppConfig implements WebMvcConfigurer {
 

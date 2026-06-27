@@ -30,4 +30,5 @@ public interface BookRepository extends JpaRepository<Book, Long> {
             AND SIZE(b.authors) = 1
             """)
     void deleteAllByUserId(@Param("userId") Long userId);
+
 }

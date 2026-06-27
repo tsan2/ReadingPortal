@@ -4,6 +4,8 @@ import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import ru.anastasya.readingportal.utils.ValidationConstants;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

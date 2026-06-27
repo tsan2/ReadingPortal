@@ -5,6 +5,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -42,15 +43,15 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, status);
     }
 
-    public @ExceptionHandler(ConstraintViolationException.class)
-    ResponseEntity<ErrorResponse> validExceptionHandler(ConstraintViolationException e){
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> validExceptionHandler(ConstraintViolationException e){
         HttpStatus status = HttpStatus.BAD_REQUEST;
         ErrorResponse errorResponse = new ErrorResponse(status, e.getMessage(), OffsetDateTime.now());
         return new ResponseEntity<>(errorResponse, status);
     }
 
-    public @ExceptionHandler(Exception.class)
-    ResponseEntity<ErrorResponse> ExceptionHandler(Exception e){
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> ExceptionHandler(Exception e){
         e.printStackTrace();
 
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;

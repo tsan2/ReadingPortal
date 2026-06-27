@@ -71,6 +71,12 @@ expires_at TIMESTAMPTZ NOT NULL,
 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 )
 
+CREATE TABLE IF NOT EXISTS refresh_tokens(
+    id uuid PRIMARY KEY,
+    user_id bigint REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
+)
+
 CREATE INDEX password_reset_codes_code_index
 on password_reset_codes(code);
 

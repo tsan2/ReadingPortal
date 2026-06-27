@@ -3,6 +3,7 @@ package ru.anastasya.readingportal.controllers;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import java.util.List;
 @Validated
 @AllArgsConstructor
 @RestController
+@Tag(name = "Тома", description = "Методы для работы с томами")
 @RequestMapping("")
 public class VolumeController {
 
@@ -30,7 +32,7 @@ public class VolumeController {
     @ApiResponse(responseCode = "409", description = "Такой номер тома уже существует")
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
     @Operation(summary = "Создать том")
-    @PostMapping("/book/{id}/volume")
+    @PostMapping("/book/{bookId}/volume")
     public ResponseEntity<VolumeResponseDTO> createVolume(@RequestBody VolumeRequest volumeRequest,
                                                           @AuthenticationPrincipal CustomUserDetails userDetails,
                                                           @Parameter(description = "айди книги", example = "1")
@@ -56,10 +58,10 @@ public class VolumeController {
     @ApiResponse(responseCode = "200", description = "Успешно")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @Operation(summary = "Найти все тома по айди книги")
-    @GetMapping("/book/{id}/volume")
+    @GetMapping("/book/{bookId}/volume")
     public ResponseEntity<List<VolumeSummaryDTO>> findAllByBookId(@Parameter(description = "айди книги", example = "1")
-                                                                  @PathVariable @Min(1) Long id){
-        List<VolumeSummaryDTO> volumes = volumeService.findAllByBookId(id);
+                                                                  @PathVariable @Min(1) Long bookId){
+        List<VolumeSummaryDTO> volumes = volumeService.findAllByBookId(bookId);
         return new ResponseEntity<>(volumes, HttpStatus.OK);
     }
 

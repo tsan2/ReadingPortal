@@ -179,12 +179,21 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public User findById(Long id){
-        return userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        return userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
     }
 
     @Transactional(readOnly = true)
     public User findUserByNickname(String nickname){
-        return userRepository.findByNickname(nickname).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        return userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+    }
+
+    @Transactional(readOnly = true)
+    public User findByEmailOrNickname(String emailOrNickname){
+        User user = userRepository.findByEmailOrNickname(emailOrNickname)
+                .orElse(null);
+        return user;
     }
 
 //    public User findUserByTokenHash(String tokenHash){

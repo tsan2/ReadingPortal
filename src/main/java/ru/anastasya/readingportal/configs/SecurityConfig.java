@@ -1,7 +1,11 @@
 package ru.anastasya.readingportal.configs;
 
+import io.jsonwebtoken.security.JwkThumbprint;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -11,10 +15,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.models.Role;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.repositories.UserRepository;
+import ru.anastasya.readingportal.security.JwtFilter;
 
 import java.util.Set;
 
@@ -25,21 +31,28 @@ public class SecurityConfig {
     private String ADMIN_PASSWORD;
     @Value("${app.admin.email}")
     private String ADMIN_EMAIL;
+    private final JwtFilter jwtFilter;
+
+    public SecurityConfig(JwtFilter jwtFilter){
+        this.jwtFilter = jwtFilter;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity){
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth ->
-                        auth.requestMatchers("/auth/register", "/auth/forgot-password", "/auth/reset-password").permitAll()
+                        auth.requestMatchers("/auth/**").permitAll()
                                 .requestMatchers("/user/profile").authenticated()
                                 .requestMatchers(HttpMethod.GET, "/book", "/genre", "/volume", "/user").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/book/**", "/genre/*", "/volume/**", "/user/*").permitAll()
-                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/swagger-ui.html").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/genre").hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.DELETE, "/genre/{id}").hasRole("ADMIN")
                                 .anyRequest().authenticated())
-                .httpBasic(Customizer.withDefaults()).build();
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 
     @Bean
@@ -57,5 +70,12 @@ public class SecurityConfig {
                 userRepository.save(user);
             }
         };
+    }
+
+    @Bean
+    public FilterRegistrationBean<JwtFilter> filterRegistrationBean(JwtFilter jwtFilter){
+        FilterRegistrationBean<JwtFilter> registrationBean = new FilterRegistrationBean<>(jwtFilter);
+        registrationBean.setEnabled(false);
+        return registrationBean;
     }
 }

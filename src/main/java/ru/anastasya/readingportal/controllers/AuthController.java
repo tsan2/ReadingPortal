@@ -1,20 +1,19 @@
 package ru.anastasya.readingportal.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.apache.coyote.Response;
+import org.hibernate.annotations.Parent;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.*;
-import ru.anastasya.readingportal.exceptions.ConflictException;
-import ru.anastasya.readingportal.models.User;
-import ru.anastasya.readingportal.security.CustomUserDetails;
+import ru.anastasya.readingportal.services.AuthService;
 import ru.anastasya.readingportal.services.PasswordResetCodeService;
 import ru.anastasya.readingportal.services.UserService;
 
@@ -27,6 +26,7 @@ public class AuthController {
 
     private final UserService userService;
     private final PasswordResetCodeService resetCodeService;
+    private final AuthService authService;
 
     @Tag(name = "Авторизация", description = "Методы для работы с регистрацией и авторизацией пользователей")
     @Operation(summary = "Зарегистрироваться")
@@ -42,11 +42,68 @@ public class AuthController {
     @Tag(name = "Авторизация", description = "Методы для работы с регистрацией и авторизацией пользователей")
     @Operation(summary = "Войти в аккаунт")
     @ApiResponse(responseCode = "200", description = "Успешно")
-    @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    @ApiResponse(responseCode = "401", description = "Логин или пароль введен неверно")
+    @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @PostMapping("/login")
-    public ResponseEntity<ProfileDTO> login(@AuthenticationPrincipal CustomUserDetails userDetails){
-        ProfileDTO profileDTO = userService.login(userDetails.getId());
-        return new ResponseEntity<>(profileDTO, HttpStatus.OK);
+    public ResponseEntity<JwtShortResponse> login(@RequestBody @Valid UserLoginDTO userLoginDTO,
+                                                  HttpServletResponse httpServletResponse){
+        JwtFullResponse jwtFullResponse = authService.login(userLoginDTO);
+
+        Cookie cookie = new Cookie("refreshToken", jwtFullResponse.refreshToken());
+        cookie.setMaxAge(60 * 60 * 24 * 30);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/reading-portal/auth");
+
+        httpServletResponse.addCookie(cookie);
+        return new ResponseEntity<>(new JwtShortResponse(jwtFullResponse.accessToken()), HttpStatus.OK);
+    }
+
+    @Tag(name = "Авторизация", description = "Методы для работы с регистрацией и авторизацией пользователей")
+    @Operation(summary = "Обновление токенов")
+    @ApiResponse(responseCode = "200", description = "Успешно")
+    @ApiResponse(responseCode = "401", description = "Токен невалиден или вы не авторизованы")
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@Parameter(hidden = true)
+                                                        @CookieValue(value = "refreshToken", required = false) String refreshToken,
+                                                    HttpServletResponse httpServletResponse){
+        if (refreshToken == null){
+            HttpStatus httpStatus = HttpStatus.UNAUTHORIZED;
+            ErrorResponse errorResponse = new ErrorResponse(httpStatus,
+                    "Вы не авторизованы", OffsetDateTime.now());
+            return new ResponseEntity<>(errorResponse, httpStatus);
+        }
+        JwtFullResponse jwtFullResponse = authService.refreshToken(refreshToken);
+
+        Cookie cookie = new Cookie("refreshToken", jwtFullResponse.refreshToken());
+        cookie.setMaxAge(60 * 60 * 24 * 30);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/reading-portal/auth");
+
+        httpServletResponse.addCookie(cookie);
+        return new ResponseEntity<>(new JwtShortResponse(jwtFullResponse.accessToken()), HttpStatus.OK);
+    }
+
+    @Tag(name = "Авторизация", description = "Методы для работы с регистрацией и авторизацией пользователей")
+    @Operation(summary = "Выход из аккаунта")
+    @ApiResponse(responseCode = "200", description = "Успешно")
+    @ApiResponse(responseCode = "401", description = "Токен невалиден")
+    @PostMapping("/logout")
+    public ResponseEntity<MessageResponse> logout(@Parameter(hidden = true) @CookieValue(value = "refreshToken", required = false) String refreshToken,
+                                    HttpServletResponse httpServletResponse){
+        MessageResponse messageResponse = new MessageResponse("Вы успешно вышли из аккаунта");
+        if (refreshToken == null){
+            return new ResponseEntity<>(messageResponse, HttpStatus.OK);
+        }
+        authService.logout(refreshToken);
+
+        Cookie cookie = new Cookie("refreshToken", "");
+        cookie.setMaxAge(0);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/reading-portal/auth");
+
+        httpServletResponse.addCookie(cookie);
+
+        return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }
 
     @Tag(name = "Забыл пароль", description = "Методы для восстановления пароля")

@@ -9,7 +9,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.hibernate.annotations.Parent;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.*;
@@ -49,12 +51,15 @@ public class AuthController {
                                                   HttpServletResponse httpServletResponse){
         JwtFullResponse jwtFullResponse = authService.login(userLoginDTO);
 
-        Cookie cookie = new Cookie("refreshToken", jwtFullResponse.refreshToken());
-        cookie.setMaxAge(60 * 60 * 24 * 30);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/reading-portal/auth");
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", jwtFullResponse.refreshToken())
+                .maxAge(60 * 60 * 24 * 30)
+                .httpOnly(true)
+                .sameSite("Strict")
+                .secure(false)  //временно
+                .path("/reading-portal/auth")
+                .build();
 
-        httpServletResponse.addCookie(cookie);
+        httpServletResponse.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return new ResponseEntity<>(new JwtShortResponse(jwtFullResponse.accessToken()), HttpStatus.OK);
     }
 

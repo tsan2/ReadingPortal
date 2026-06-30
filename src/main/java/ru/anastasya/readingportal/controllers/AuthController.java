@@ -79,12 +79,15 @@ public class AuthController {
         }
         JwtFullResponse jwtFullResponse = authService.refreshToken(refreshToken);
 
-        Cookie cookie = new Cookie("refreshToken", jwtFullResponse.refreshToken());
-        cookie.setMaxAge(60 * 60 * 24 * 30);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/reading-portal/auth");
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", jwtFullResponse.refreshToken())
+                .maxAge(60 * 60 * 24 * 30)
+                .httpOnly(true)
+                .sameSite("Strict")
+                .secure(false)  //временно
+                .path("/reading-portal/auth")
+                .build();
 
-        httpServletResponse.addCookie(cookie);
+        httpServletResponse.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return new ResponseEntity<>(new JwtShortResponse(jwtFullResponse.accessToken()), HttpStatus.OK);
     }
 
@@ -101,12 +104,15 @@ public class AuthController {
         }
         authService.logout(refreshToken);
 
-        Cookie cookie = new Cookie("refreshToken", "");
-        cookie.setMaxAge(0);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/reading-portal/auth");
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .maxAge(0)
+                .httpOnly(true)
+                .sameSite("Strict")
+                .secure(false)  //временно
+                .path("/reading-portal/auth")
+                .build();
 
-        httpServletResponse.addCookie(cookie);
+        httpServletResponse.setHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         return new ResponseEntity<>(messageResponse, HttpStatus.OK);
     }

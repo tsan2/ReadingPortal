@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.models.Role;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.repositories.UserRepository;
+import ru.anastasya.readingportal.security.CustomAccessDeniedHandler;
+import ru.anastasya.readingportal.security.CustomAuthenticationEntryPoint;
 import ru.anastasya.readingportal.security.JwtFilter;
 
 import java.util.Set;
@@ -32,9 +34,15 @@ public class SecurityConfig {
     @Value("${app.admin.email}")
     private String ADMIN_EMAIL;
     private final JwtFilter jwtFilter;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
-    public SecurityConfig(JwtFilter jwtFilter){
+    public SecurityConfig(JwtFilter jwtFilter,
+                          CustomAccessDeniedHandler customAccessDeniedHandler,
+                          CustomAuthenticationEntryPoint customAuthenticationEntryPoint) {
         this.jwtFilter = jwtFilter;
+        this.customAccessDeniedHandler = customAccessDeniedHandler;
+        this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
     }
 
     @Bean
@@ -53,6 +61,9 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.POST, "/genre").hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.DELETE, "/genre/{id}").hasRole("ADMIN")
                                 .anyRequest().authenticated())
+                .exceptionHandling(exceptions ->
+                        exceptions.authenticationEntryPoint(customAuthenticationEntryPoint)
+                                .accessDeniedHandler(customAccessDeniedHandler))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

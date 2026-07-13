@@ -1,14 +1,8 @@
 package ru.anastasya.readingportal.dto;
 
-//import ru.anastasya.readingportal.models.Genre;
-
 import io.swagger.v3.oas.annotations.media.Schema;
-import ru.anastasya.readingportal.models.Genre;
-import ru.anastasya.readingportal.models.User;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 @Schema(description = "Информация о книге")

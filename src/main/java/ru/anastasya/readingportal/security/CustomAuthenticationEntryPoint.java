@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import ru.anastasya.readingportal.dto.ErrorResponse;
 import tools.jackson.databind.ObjectMapper;
 
-import javax.xml.stream.events.Characters;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 

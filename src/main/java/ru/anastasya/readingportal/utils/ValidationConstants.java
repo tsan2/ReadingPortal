@@ -10,6 +10,8 @@ public final class ValidationConstants {
     public static final int USER_NICKNAME_MAX_SIZE = 30;
     public static final int USER_PASSWORD_MIN_SIZE = 4;
 
+    public static final int CONTENT_MAX_SIZE = 2_000_000;
+
     public static final int TITLE_MIN_SIZE = 2;
     public static final int TITLE_MAX_SIZE = 250;
 

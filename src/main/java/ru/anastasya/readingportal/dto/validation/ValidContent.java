@@ -14,10 +14,10 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = {})
-@NotBlank(message = "Название не может быть пустым")
-@Size(min = ValidationConstants.TITLE_MIN_SIZE, max = ValidationConstants.TITLE_MAX_SIZE, message = "Некорректная длина названия")
-public @interface ValidTitle {
-    String message() default "Название не соответствует требованиям";
+@NotBlank(message = "Текст не может быть пустым")
+@Size(max = ValidationConstants.CONTENT_MAX_SIZE, message = "Слишком длинный текст. Максимальная длина - 2 миллиона символов")
+public @interface ValidContent {
+    String message() default "Текст не соответствует требованиям";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

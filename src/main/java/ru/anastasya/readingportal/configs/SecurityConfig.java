@@ -1,22 +1,18 @@
 package ru.anastasya.readingportal.configs;
 
-import io.jsonwebtoken.security.JwkThumbprint;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.models.Role;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.repositories.UserRepository;
@@ -26,6 +22,7 @@ import ru.anastasya.readingportal.security.JwtFilter;
 
 import java.util.Set;
 
+@EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
 
@@ -54,7 +51,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/auth/**").permitAll()
-                                .requestMatchers("/user/profile").authenticated()
+                                .requestMatchers("/user/me").authenticated()
                                 .requestMatchers(HttpMethod.GET, "/book", "/genre", "/volume", "/user").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/book/**", "/genre/*", "/volume/**", "/user/*").permitAll()
                                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/swagger-ui.html").permitAll()

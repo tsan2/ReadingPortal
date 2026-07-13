@@ -12,7 +12,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.*;
@@ -29,11 +28,10 @@ public class BookController {
 
     private BookService bookService;
 
-    //Временно айди автора через параметры
-
     @ApiResponse(responseCode = "201", description = "Объект успешно создан")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Создать книгу")
     @PostMapping("")
     public ResponseEntity<BookResponseDTO> createBook(@Valid @RequestBody CreateBookDTO createBookDTO,
@@ -46,13 +44,13 @@ public class BookController {
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Изменить название книги")
     @PatchMapping("/{id}")
     public ResponseEntity<BookResponseDTO> changeTitle(@Valid @RequestBody ChangeTitleDTO bookTitleDTO,
-                                                       @AuthenticationPrincipal CustomUserDetails userDetails,
                                                        @Parameter(description = "айди книги", example = "1")
                                                        @PathVariable @Min(1) Long id){
-        BookResponseDTO bookResponseDTO = bookService.changeTitle(bookTitleDTO, userDetails.getId(), id);
+        BookResponseDTO bookResponseDTO = bookService.changeTitle(bookTitleDTO, id);
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.OK);
     }
 
@@ -60,6 +58,7 @@ public class BookController {
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные или к книге уже добавлен этот автор")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Добавить автора к книге")
     @PostMapping("/{bookId}/author/{authorId}")
     public ResponseEntity<BookResponseDTO> addAuthor(@Parameter(description = "айди книги", example = "1")
@@ -67,9 +66,8 @@ public class BookController {
                                                      @Parameter(description = "айди автора", example = "1")
                                                      @PathVariable @Min(1) Long authorId,
                                                      @Parameter(description = "версия записи", example = "1")
-                                                     @RequestParam @Min(0) int version,
-                                                     @AuthenticationPrincipal CustomUserDetails userDetails){
-        BookResponseDTO bookResponseDTO = bookService.addAuthorToBook(bookId, authorId, version, userDetails.getId());
+                                                     @RequestParam @Min(0) int version){
+        BookResponseDTO bookResponseDTO = bookService.addAuthorToBook(bookId, authorId, version);
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.CREATED);
     }
 
@@ -77,6 +75,7 @@ public class BookController {
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные или к книге уже добавлен этот жанр")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Добавить жанр к книге")
     @PostMapping("/{bookId}/genre/{genreId}")
     public ResponseEntity<BookResponseDTO> addGenre(@Parameter(description = "айди книги", example = "1")
@@ -84,9 +83,8 @@ public class BookController {
                                                     @Parameter(description = "айди жанра", example = "1")
                                                     @PathVariable @Min(1) Long genreId,
                                                     @Parameter(description = "версия записи", example = "1")
-                                                    @RequestParam @Min(0) int version,
-                                                    @AuthenticationPrincipal CustomUserDetails userDetails){
-        BookResponseDTO bookResponseDTO = bookService.addGenreToBook(bookId, genreId, version, userDetails.getId());
+                                                    @RequestParam @Min(0) int version){
+        BookResponseDTO bookResponseDTO = bookService.addGenreToBook(bookId, genreId, version);
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.CREATED);
     }
 
@@ -95,6 +93,7 @@ public class BookController {
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные или к книге не добавлен этот автор")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Удалить автора из книги")
     @DeleteMapping("/{bookId}/author/{authorId}")
     public ResponseEntity<BookResponseDTO> deleteAuthor(@Parameter(description = "айди книги", example = "1")
@@ -102,9 +101,8 @@ public class BookController {
                                                         @Parameter(description = "айди автора", example = "1")
                                                         @PathVariable @Min(1) Long authorId,
                                                         @Parameter(description = "версия записи", example = "1")
-                                                        @RequestParam @Min(0) int version,
-                                                        @AuthenticationPrincipal CustomUserDetails userDetails){
-        BookResponseDTO bookResponseDTO = bookService.deleteAuthorFromBook(bookId, authorId, version, userDetails.getId());
+                                                        @RequestParam @Min(0) int version){
+        BookResponseDTO bookResponseDTO = bookService.deleteAuthorFromBook(bookId, authorId, version);
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.OK);
     }
 
@@ -112,6 +110,7 @@ public class BookController {
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные или к книге не добавлен этот жанр")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Удалить жанр из книги")
     @DeleteMapping("/{bookId}/genre/{genreId}")
     public ResponseEntity<BookResponseDTO> deleteGenre(@Parameter(description = "айди книги", example = "1")
@@ -119,9 +118,8 @@ public class BookController {
                                                        @Parameter(description = "айди жанра", example = "1")
                                                        @PathVariable @Min(1) Long genreId,
                                                        @Parameter(description = "версия записи", example = "1")
-                                                       @RequestParam @Min(0) int version,
-                                                       @AuthenticationPrincipal CustomUserDetails userDetails){
-        BookResponseDTO bookResponseDTO = bookService.deleteGenreFromBook(bookId, genreId, version, userDetails.getId());
+                                                       @RequestParam @Min(0) int version){
+        BookResponseDTO bookResponseDTO = bookService.deleteGenreFromBook(bookId, genreId, version);
         return new ResponseEntity<>(bookResponseDTO, HttpStatus.OK);
     }
 
@@ -170,12 +168,12 @@ public class BookController {
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "404", description = "Книга не найдена")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Удалить книгу")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                       @Parameter(description = "айди книги", example = "1")
+    public ResponseEntity<Void> delete(@Parameter(description = "айди книги", example = "1")
                                        @PathVariable @Min(1) Long id){
-        bookService.deleteBook(id, userDetails.getId());
+        bookService.deleteBook(id);
         return ResponseEntity.noContent().build();
     }
 

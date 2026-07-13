@@ -6,7 +6,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.JwtFullResponse;
-import ru.anastasya.readingportal.dto.JwtShortResponse;
 import ru.anastasya.readingportal.dto.RefreshTokenResult;
 import ru.anastasya.readingportal.dto.UserLoginDTO;
 import ru.anastasya.readingportal.exceptions.AuthenticationException;

@@ -9,12 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.GenreRequestDTO;
 import ru.anastasya.readingportal.dto.GenreResponseDTO;
 import ru.anastasya.readingportal.exceptions.EntityNotFoundException;
-import ru.anastasya.readingportal.exceptions.ValidationException;
 import ru.anastasya.readingportal.mappers.GenreMapper;
 import ru.anastasya.readingportal.models.Genre;
 import ru.anastasya.readingportal.repositories.GenreRepository;
-
-import java.util.Objects;
 
 @Service
 @AllArgsConstructor

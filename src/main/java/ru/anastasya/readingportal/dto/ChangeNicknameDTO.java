@@ -1,9 +1,7 @@
 package ru.anastasya.readingportal.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import ru.anastasya.readingportal.dto.validation.ValidUserNickname;
 
 @Schema(description = "Смена никнейма")

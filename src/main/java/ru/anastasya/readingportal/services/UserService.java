@@ -14,7 +14,6 @@ import ru.anastasya.readingportal.models.Role;
 import ru.anastasya.readingportal.models.User;
 import ru.anastasya.readingportal.repositories.UserRepository;
 
-import java.util.HashSet;
 import java.util.Set;
 
 @Service

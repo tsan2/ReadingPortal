@@ -31,13 +31,13 @@ public class VolumeController {
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "409", description = "Такой номер тома уже существует")
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Создать том")
     @PostMapping("/book/{bookId}/volume")
     public ResponseEntity<VolumeResponseDTO> createVolume(@RequestBody VolumeRequest volumeRequest,
-                                                          @AuthenticationPrincipal CustomUserDetails userDetails,
                                                           @Parameter(description = "айди книги", example = "1")
                                                           @PathVariable @Min(1) Long bookId){
-        VolumeResponseDTO volumeResponseDTO = volumeService.createVolume(volumeRequest, userDetails.getId(), bookId);
+        VolumeResponseDTO volumeResponseDTO = volumeService.createVolume(volumeRequest, bookId);
         return new ResponseEntity<>(volumeResponseDTO, HttpStatus.CREATED);
     }
 
@@ -45,13 +45,13 @@ public class VolumeController {
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "404", description = "Том не найден")
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Изменить название или номер тома")
     @PatchMapping("volume/{id}")
     public ResponseEntity<VolumeResponseDTO> updateVolume(@RequestBody UpdateVolumeDTO updateVolumeDTO,
-                                                          @AuthenticationPrincipal CustomUserDetails userDetails,
                                                           @Parameter(description = "айди тома", example = "1")
                                                           @PathVariable @Min(1) Long id){
-        VolumeResponseDTO volumeResponseDTO = volumeService.updateVolume(updateVolumeDTO, userDetails.getId(), id);
+        VolumeResponseDTO volumeResponseDTO = volumeService.updateVolume(updateVolumeDTO, id);
         return new ResponseEntity<>(volumeResponseDTO, HttpStatus.OK);
     }
 
@@ -80,12 +80,13 @@ public class VolumeController {
     @ApiResponse(responseCode = "403", description = "Нет прав на выполнение действия")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "404", description = "Том не найден")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Удалить том")
     @DeleteMapping("/volume/{id}")
     public ResponseEntity<Void> deleteVolume(@AuthenticationPrincipal CustomUserDetails userDetails,
                                              @Parameter(description = "айди тома", example = "1")
                                              @PathVariable @Min(1) Long id){
-        volumeService.deleteVolume(id, userDetails.getId());
+        volumeService.deleteVolume(id);
         return ResponseEntity.noContent().build();
     }
 }

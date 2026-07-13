@@ -28,7 +28,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
         ErrorResponse errorResponse = new ErrorResponse(HttpStatus.FORBIDDEN,
-                "у вас недостаточно прав", OffsetDateTime.now());
+                "У вас недостаточно прав", OffsetDateTime.now());
 
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }

@@ -5,11 +5,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
+@DynamicUpdate
 @Table(name = "chapters")
 @Entity
 public class Chapter {
@@ -21,6 +23,8 @@ public class Chapter {
     private Long id;
     @Column(nullable = false)
     private String title;
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String content;
     @Column(name = "chapter_main_number", nullable = false)
     private int chapterMainNumber;
@@ -31,4 +35,10 @@ public class Chapter {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "volume_id")
     private Volume volume;
+
+    public Chapter(String title, int chapterMainNumber, int chapterSubNumber){
+        this.title = title;
+        this.chapterMainNumber = chapterMainNumber;
+        this.chapterSubNumber = chapterSubNumber;
+    }
 }

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.*;
@@ -27,7 +28,6 @@ public class BookService {
     private final VolumeService volumeService;
     private final BookMapper bookMapper;
 
-    //потом будет через dto
     @Transactional
     public BookResponseDTO createBookPlaceholder(CreateBookDTO dto, Long authorId){
         User author = userRepository.findById(authorId).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
@@ -35,15 +35,14 @@ public class BookService {
         Book book = bookMapper.fromCreateBookDTO(dto);
         book.getAuthors().add(author);
         Book bookNew = bookRepository.save(book);
-        volumeService.createDefaultVolume(book.getId(), authorId);
+        volumeService.createDefaultVolume(book.getId());
         return bookMapper.toBookResponseDTO(bookNew);
     }
 
-    //пока будет такое dto, потом там будет только id книги, новое название, версия. currentUserId через авторизацию
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
     @Transactional
-    public BookResponseDTO changeTitle(ChangeTitleDTO dto, Long currentUserId, Long bookId){
+    public BookResponseDTO changeTitle(ChangeTitleDTO dto, Long bookId){
         Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        checkAuthority(book, currentUserId);
 
         if (!book.getVersion().equals(dto.version())){
             throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
@@ -52,10 +51,11 @@ public class BookService {
         return bookMapper.toBookResponseDTO(book);
     }
 
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
     @Transactional
-    public BookResponseDTO addAuthorToBook(Long bookId, Long authorId, int version, Long currentUserId){
+    public BookResponseDTO addAuthorToBook(Long bookId, Long authorId, int version){
         Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        checkAuthority(book, currentUserId);
+
         if (book.getAuthors().stream().anyMatch(u -> u.getId().equals(authorId))){
             throw new ConflictException("К книге уже добавлен этот автор");
         }
@@ -67,10 +67,10 @@ public class BookService {
         return bookMapper.toBookResponseDTO(book);
     }
 
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
     @Transactional
-    public BookResponseDTO addGenreToBook(Long bookId, Long genreId, int version, Long currentUserId){
+    public BookResponseDTO addGenreToBook(Long bookId, Long genreId, int version){
         Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        checkAuthority(book, currentUserId);
 
         if (book.getGenres().stream().anyMatch(g -> g.getId().equals(genreId))){
             throw new ConflictException("К книге уже добавлен этот жанр");
@@ -83,10 +83,11 @@ public class BookService {
         return bookMapper.toBookResponseDTO(book);
     }
 
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
     @Transactional
-    public BookResponseDTO deleteAuthorFromBook(Long bookId, Long authorId, int version, Long currentUserId){
+    public BookResponseDTO deleteAuthorFromBook(Long bookId, Long authorId, int version){
         Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        checkAuthority(book, currentUserId);
+
         if (book.getAuthors().stream().noneMatch(a -> a.getId().equals(authorId))){
             throw new ConflictException("К книге не добавлен этот автор");
         }
@@ -98,10 +99,11 @@ public class BookService {
         return bookMapper.toBookResponseDTO(book);
     }
 
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
     @Transactional
-    public BookResponseDTO deleteGenreFromBook(Long bookId, Long genreId, int version, Long currentUserId){
+    public BookResponseDTO deleteGenreFromBook(Long bookId, Long genreId, int version){
         Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        checkAuthority(book, currentUserId);
+
         if (book.getGenres().stream().noneMatch(g -> g.getId().equals(genreId))){
             throw new ConflictException("К книге не добавлен этот жанр");
         }
@@ -113,7 +115,6 @@ public class BookService {
         return bookMapper.toBookResponseDTO(book);
     }
 
-    //может ещё загружать список авторов(и возможно жанров)
     @Transactional(readOnly = true)
     public Page<BookSummaryDTO> findBooksByBookFilter(BookFilter bookFilter, int size, int page){
         Sort sort = Sort.unsorted();
@@ -128,31 +129,16 @@ public class BookService {
         return books.map(b -> new BookSummaryDTO(b.getId(), b.getTitle()));
     }
 
-    //скорее всего не нужно
-//    public List<Book> findFullBooksByBookFilter(BookFilter bookFilter){
-//        List<Book> books = bookDAO.findBooksByBookFilter(bookFilter);
-//        if (!books.isEmpty()){
-//            HashMap<Long, List<User>> authorsMap = userDAO.findAllAuthorsOfBooks(books);
-//            HashMap<Long, List<Genre>> genresMap = genreDAO.findAllGenresOfBooks(books);
-//
-//            for (Book book : books){
-//                book.setAuthors(authorsMap.get(book.getId()));
-//                book.setGenres(genresMap.get(book.getId()));
-//            }
-//        }
-//        return books;
-//    }
-
     @Transactional(readOnly = true)
     public BookResponseDTO findById(Long id){
         Book book = bookRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
         return bookMapper.toBookResponseDTO(book);
     }
 
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
     @Transactional
-    public void deleteBook(Long bookId, Long currentUserId){
+    public void deleteBook(Long bookId){
         Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
-        checkAuthority(book, currentUserId);
 
         bookRepository.delete(book);
     }
@@ -162,10 +148,5 @@ public class BookService {
         bookRepository.deleteAllByUserId(userId);
     }
 
-    private void checkAuthority(Book book, Long userId){
-        if (book.getAuthors().stream().noneMatch(u -> u.getId().equals(userId))){
-            throw new ForbiddenException("У вас нет прав");
-        }
-    }
 
 }

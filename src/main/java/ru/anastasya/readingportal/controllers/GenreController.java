@@ -15,13 +15,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.anastasya.readingportal.dto.GenreRequestDTO;
 import ru.anastasya.readingportal.dto.GenreResponseDTO;
-import ru.anastasya.readingportal.exceptions.EntityNotFoundException;
-import ru.anastasya.readingportal.exceptions.ValidationException;
 import ru.anastasya.readingportal.mappers.GenreMapper;
-import ru.anastasya.readingportal.models.Genre;
 import ru.anastasya.readingportal.services.GenreService;
-
-import java.util.List;
 
 @Tag(name = "Жанры",
 description = "Методы для работы с жанрами")
@@ -36,6 +31,8 @@ public class GenreController {
 
     @ApiResponse(responseCode = "201", description = "Объект успешно создан")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
+    @ApiResponse(responseCode = "403", description = "У вас недостаточно прав")
     @Operation(summary = "Создать жанр")
     @PostMapping("")
     public ResponseEntity<GenreResponseDTO> createGenre(@RequestBody @Valid GenreRequestDTO genreRequestDTO){
@@ -46,6 +43,8 @@ public class GenreController {
     @ApiResponse(responseCode = "204", description = "Объект успешно удален")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "404", description = "Жанр не найден")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
+    @ApiResponse(responseCode = "403", description = "У вас недостаточно прав")
     @Operation(summary = "Удалить жанр")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGenre(@Parameter(description = "айди жанра", example = "1")

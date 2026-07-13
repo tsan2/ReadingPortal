@@ -31,4 +31,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
             """)
     void deleteAllByUserId(@Param("userId") Long userId);
 
+    boolean existsByIdAndAuthorsId(Long bookId, Long authorId);
+
 }

@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import ru.anastasya.readingportal.models.Volume;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface VolumeRepository extends JpaRepository<Volume, Long> {
 
@@ -13,7 +14,11 @@ public interface VolumeRepository extends JpaRepository<Volume, Long> {
     Integer findLastMainNumberByBookId(@Param("bookId") Long bookId);
 
     List<Volume> findAllByBookIdAndIsDefaultFalse(Long bookId);
-    Volume findByBookIdAndIsDefaultTrue(Long bookId);
+    Optional<Volume> findByBookIdAndIsDefaultTrue(Long bookId);
     int countByBookIdAndIsDefaultFalse(Long bookId);
-    boolean existsByBookIdAndVolumeMainNumberAndVolumeSubNumberAndIsDefaultFalse(Long bookId, int volumeMainNumber, int volumeSubNumber);
+    boolean existsByBookIdAndVolumeMainNumberAndVolumeSubNumberAndIsDefaultFalse(Long bookId,
+                                                                                 int volumeMainNumber,
+                                                                                 int volumeSubNumber);
+
+    boolean existsByIdAndBookAuthorsId(Long volumeId, Long authorId);
 }

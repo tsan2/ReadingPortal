@@ -31,10 +31,10 @@ public class UserController {
     private final UserService userService;
     private final UserMapper userMapper;
 
-    //потом будет по авторизации
     @ApiResponse(responseCode = "200", description = "Успешно")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Сменить пароль по старому паролю")
     @PatchMapping("/me/password")
     public ResponseEntity<MessageResponse> changePasswordByOldPassword(@AuthenticationPrincipal CustomUserDetails userDetails,
@@ -56,9 +56,9 @@ public class UserController {
         return new ResponseEntity<>(users, HttpStatus.OK);
     }
 
-    //потом будет по авторизации
     @ApiResponse(responseCode = "200", description = "Успешно")
     @ApiResponse(responseCode = "400", description = "Неверный запрос")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Сменить никнейм")
     @PatchMapping("/me/nickname")
     public ResponseEntity<MessageResponse> changeNickname(@AuthenticationPrincipal CustomUserDetails userDetails,
@@ -67,10 +67,10 @@ public class UserController {
         return new ResponseEntity<>(new MessageResponse("Никнейм изменен"), HttpStatus.OK);
     }
 
-    //потом будет по авторизации
     @ApiResponse(responseCode = "200", description = "Успешно")
     @ApiResponse(responseCode = "400", description = "Неверный запрос или неверный пароль")
     @ApiResponse(responseCode = "409", description = "Кто-то уже изменил данные или емейл занят")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Сменить адрес электронной почты")
     @PatchMapping("/me/email")
     public ResponseEntity<MessageResponse> changeEmail(@AuthenticationPrincipal CustomUserDetails userDetails,
@@ -82,8 +82,9 @@ public class UserController {
     //временная реализация пока нет авторизации
     @ApiResponse(responseCode = "200", description = "Успешно")
     @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Получить свой профиль")
-    @GetMapping("/profile")
+    @GetMapping("/me")
     public ResponseEntity<ProfileDTO> getProfile(@AuthenticationPrincipal CustomUserDetails userDetails) {
         User user = userService.findById(userDetails.getId());
 

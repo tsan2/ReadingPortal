@@ -1,6 +1,7 @@
 package ru.anastasya.readingportal.services;
 
 import lombok.AllArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.dto.*;
@@ -10,9 +11,7 @@ import ru.anastasya.readingportal.models.Book;
 import ru.anastasya.readingportal.models.Volume;
 import ru.anastasya.readingportal.repositories.BookRepository;
 import ru.anastasya.readingportal.repositories.VolumeRepository;
-import ru.anastasya.readingportal.utils.OperationResult;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @AllArgsConstructor
@@ -23,13 +22,12 @@ public class VolumeService {
     private final BookRepository bookRepository;
     private final VolumeMapper volumeMapper;
 
-
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
     @Transactional
-    public VolumeResponseDTO createVolume(VolumeRequest volumeRequest, Long currentUserId, Long bookId){
-        FractionalNumber number = mapToFractionalNumber(volumeRequest.volumeNumber());
-        Volume volume = new Volume(volumeRequest.title(), number.mainNumber(), number.subNumber(), false);
+    public VolumeResponseDTO createVolume(VolumeRequest volumeRequest, Long bookId){
+        Volume volume = volumeMapper.fromVolumeRequest(volumeRequest);
+        volume.setDefault(false);
 
-        checkAuthorityByBookId(bookId, currentUserId);
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException("Книга с таким айди не найдена"));
 
@@ -68,9 +66,9 @@ public class VolumeService {
         return volumeResponseDTO;
     }
 
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
     @Transactional
-    public Long createDefaultVolume(Long bookId, Long currentUserId){
-        checkAuthorityByBookId(bookId, currentUserId);
+    public Long createDefaultVolume(Long bookId){
         Volume volume = new Volume("Базовый том", 0, 0, true);
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException("Книга с таким айди не найдена"));
@@ -81,14 +79,13 @@ public class VolumeService {
 
     @Transactional(readOnly = true)
     public Volume findDefaultVolume(Long bookId){
-        return volumeRepository.findByBookIdAndIsDefaultTrue(bookId);
+        return volumeRepository.findByBookIdAndIsDefaultTrue(bookId)
+                .orElseThrow(() -> new EntityNotFoundException("Дефолтный том не найден"));
     }
 
-    //поменять dto на одно общее и объединить
+    @PreAuthorize("@bookSecurity.checkAuthorityByVolumeId(#volumeId, principal.id)")
     @Transactional
-    public VolumeResponseDTO updateVolume(UpdateVolumeDTO updateVolumeDTO, Long currentUserId, Long volumeId){
-        checkAuthorityByVolumeId(volumeId, currentUserId);
-
+    public VolumeResponseDTO updateVolume(UpdateVolumeDTO updateVolumeDTO, Long volumeId){
         Volume volume = volumeRepository.findById(volumeId)
                 .orElseThrow(() -> new EntityNotFoundException("Том с таким id не найден"));
 
@@ -98,16 +95,37 @@ public class VolumeService {
             volume = changeTitle(changeTitleDTO, volume);
             volumeResponseDTO = volumeMapper.toVolumeResponseDTO(volume);
         }
-        if (updateVolumeDTO.volumeNumber() != null){
-            ChangeVolumeNumberDTO changeVolumeNumberDTO = new ChangeVolumeNumberDTO(updateVolumeDTO.volumeNumber(),
-                    updateVolumeDTO.version());
+
+        if (updateVolumeDTO.volumeMainNumber() != null || updateVolumeDTO.volumeSubNumber() != null){
+            ChangeVolumeNumberDTO changeVolumeNumberDTO = getChangeVolumeNumberDTO(updateVolumeDTO, volume);
             volumeResponseDTO = changeVolumeNumber(changeVolumeNumberDTO, volume);
         }
 
         return volumeResponseDTO;
     }
 
-    //надо сделать чтобы искался там сверху
+    private ChangeVolumeNumberDTO getChangeVolumeNumberDTO(UpdateVolumeDTO updateVolumeDTO, Volume volume) {
+        Integer volumeMainNumber = null;
+        Integer volumeSubNumber = null;
+        if (updateVolumeDTO.volumeSubNumber() == null){
+            volumeMainNumber = updateVolumeDTO.volumeMainNumber();
+            volumeSubNumber = volume.getVolumeSubNumber();
+        }
+        else if(updateVolumeDTO.volumeMainNumber() == null){
+            volumeSubNumber = updateVolumeDTO.volumeSubNumber();
+            volumeMainNumber = volume.getVolumeMainNumber();
+        }
+        else{
+            volumeSubNumber = updateVolumeDTO.volumeSubNumber();
+            volumeMainNumber = updateVolumeDTO.volumeMainNumber();
+        }
+        ChangeVolumeNumberDTO changeVolumeNumberDTO = new ChangeVolumeNumberDTO(
+                volumeMainNumber,
+                volumeSubNumber,
+                updateVolumeDTO.version());
+        return changeVolumeNumberDTO;
+    }
+
     private Volume changeTitle(ChangeTitleDTO dto, Volume volume){
         if (!volume.getVersion().equals(dto.version())){
             throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
@@ -124,12 +142,8 @@ public class VolumeService {
             throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
         }
 
-        FractionalNumber fractionalNumber = mapToFractionalNumber(dto.volumeNumber());
-        int volumeMainNumber = fractionalNumber.mainNumber();
-        int volumeSubNumber = fractionalNumber.subNumber();
-
         if (volumeRepository.existsByBookIdAndVolumeMainNumberAndVolumeSubNumberAndIsDefaultFalse
-                (volume.getBook().getId(), volumeMainNumber, volumeSubNumber)){
+                (volume.getBook().getId(), dto.volumeMainNumber(), dto.volumeSubNumber())){
             throw new ValidationException("Такой номер тома уже существует");
         }
 
@@ -138,8 +152,8 @@ public class VolumeService {
             warningMessage = "Вы пропускаете номер тома. Последний номер сейчас: " + maxNumber;
         }
 
-        volume.setVolumeMainNumber(volumeMainNumber);
-        volume.setVolumeSubNumber(volumeSubNumber);
+        volume.setVolumeMainNumber(dto.volumeMainNumber());
+        volume.setVolumeSubNumber(dto.volumeSubNumber());
 
         VolumeResponseDTO volumeResponseDTO = volumeMapper.toVolumeResponseDTO(volume);
         volumeResponseDTO.setWarningMessage(warningMessage);
@@ -158,16 +172,15 @@ public class VolumeService {
         return volumeMapper.toVolumeResponseDTO(volume);
     }
 
+    @PreAuthorize("@bookSecurity.checkAuthorityByVolumeId(#volumeId, principal.id)")
     @Transactional
-    public void deleteVolume(Long id, Long currentUserId){
-        checkAuthorityByVolumeId(id, currentUserId);
-
+    public void deleteVolume(Long id){
         Volume volume = volumeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Том с таким id не найден"));
         Book book = volume.getBook();
         book.removeVolume(volume);
         if (book.getVolumes().stream().noneMatch(v -> !v.isDefault())){
-            createDefaultVolume(book.getId(), currentUserId);
+            createDefaultVolume(book.getId());
         }
     }
 
@@ -197,32 +210,5 @@ public class VolumeService {
 //        return volumeRepository.countByBookIdAndIsDefaultFalse(bookId) > 0;
 //    }
 
-    private void checkAuthorityByVolumeId(Long volumeId, Long userId){
-        Volume volume = volumeRepository.findById(volumeId)
-                .orElseThrow(() -> new EntityNotFoundException("Том с таким id не найден"));
-        Book book = volume.getBook();
 
-        if (book.getAuthors().stream().noneMatch(user -> user.getId().equals(userId))){
-            throw new ForbiddenException("У вас нет прав");
-        }
-    }
-
-    private void checkAuthorityByBookId(Long bookId, Long userId){
-        Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new EntityNotFoundException("Книга с таким id не найдена"));
-
-        if (book.getAuthors().stream().noneMatch(user -> user.getId().equals(userId))){
-            throw new ForbiddenException("У вас нет прав");
-        }
-    }
-
-    private static FractionalNumber mapToFractionalNumber(double number){
-        BigDecimal bigDecimal = BigDecimal.valueOf(number);
-        if (bigDecimal.scale()>1){
-            throw new ValidationException("Максимальное количество цифр после запятой - 1");
-        }
-        int mainNumber = (int) number;
-        int subNumber = (int) Math.round((number - mainNumber) * 10);
-        return new FractionalNumber(mainNumber, subNumber);
-    }
 }

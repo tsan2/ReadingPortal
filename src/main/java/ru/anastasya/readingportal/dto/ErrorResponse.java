@@ -3,7 +3,6 @@ package ru.anastasya.readingportal.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.http.HttpStatus;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 public record ErrorResponse(

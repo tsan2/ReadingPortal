@@ -1,25 +1,16 @@
 package ru.anastasya.readingportal.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.anastasya.readingportal.dto.RefreshTokenResult;
-import ru.anastasya.readingportal.exceptions.AuthenticationException;
-import ru.anastasya.readingportal.exceptions.TokenExpiredException;
-import ru.anastasya.readingportal.exceptions.TokenInvalidSignatureException;
-import ru.anastasya.readingportal.models.RefreshToken;
 import ru.anastasya.readingportal.models.User;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;

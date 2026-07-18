@@ -118,6 +118,7 @@ public class ChapterController {
     @ApiResponse(responseCode = "404", description = "Глава не найдена")
     @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @DeleteMapping("/chapter/{id}")
+    @Operation(summary = "Удалить главу")
     public ResponseEntity<?> deleteChapter(@PathVariable @Min(1) Long id){
         chapterService.deleteChapter(id);
         return ResponseEntity.noContent().build();

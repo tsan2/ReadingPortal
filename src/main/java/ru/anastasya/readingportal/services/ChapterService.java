@@ -59,9 +59,9 @@ public class ChapterService {
         }
 
         chapter.setVolume(volume);
-        chapterRepository.saveAndFlush(chapter);
+        Chapter chapterSaved = chapterRepository.saveAndFlush(chapter);
 
-        ChapterShortResponseDTO chapterShortResponseDTO = chapterMapper.toChapterShortResponseDTO(chapter);
+        ChapterShortResponseDTO chapterShortResponseDTO = chapterMapper.toChapterShortResponseDTO(chapterSaved);
         chapterShortResponseDTO.setVolumeId(volumeId);
         chapterShortResponseDTO.setWarningMessage(warningMessage);
 
@@ -145,6 +145,7 @@ public class ChapterService {
 
         Long volumeId = chapterRepository.findVolumeIdByChapterId(id);
 
+        //здесь если была одна глава с номером 2.4 по идее ее смена на 1.2 даст предупреждение
         if (chapterRepository.existsByVolumeIdAndChapterMainNumberAndChapterSubNumber(volumeId,
                 dto.chapterMainNumber(), dto.chapterSubNumber())){
             throw new ConflictException("Такой номер главы уже существует");

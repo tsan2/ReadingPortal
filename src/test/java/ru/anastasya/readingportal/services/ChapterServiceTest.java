@@ -1,4 +1,4 @@
-package ru.anastasya.readingportal.service;
+package ru.anastasya.readingportal.services;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,6 @@ import ru.anastasya.readingportal.models.Volume;
 import ru.anastasya.readingportal.repositories.BookRepository;
 import ru.anastasya.readingportal.repositories.ChapterRepository;
 import ru.anastasya.readingportal.repositories.VolumeRepository;
-import ru.anastasya.readingportal.services.ChapterService;
 
 import java.util.List;
 import java.util.Optional;

@@ -36,14 +36,15 @@ public interface ChapterRepository extends JpaRepository<Chapter, Long> {
                 c.chapterMainNumber, c.chapterSubNumber, c.version, c.volume.id)
         FROM Chapter c WHERE c.id=:id""")
     Optional<ChapterFullDTO> findFullById(@Param("id") Long id);
+
     boolean existsByVolumeIdAndChapterMainNumberAndChapterSubNumber(Long volumeId,
                                                                     int chapterMainNumber, int chapterSubNumber);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Chapter c SET c.title=:title, c.version=c.version+1 WHERE c.id=:id")
     void changeTitle(@Param("title") String title, @Param("id") Long id);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("""
         UPDATE Chapter c
         SET c.chapterMainNumber=:chapterMainNumber,

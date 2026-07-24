@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -31,7 +32,7 @@ public class Volume {
     @Version
     private Integer version;
     @OneToMany(mappedBy = "volume", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Chapter> chapters;
+    private List<Chapter> chapters = new ArrayList<>();
 
     public void addChapter(Chapter chapter){
         chapters.add(chapter);

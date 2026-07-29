@@ -31,7 +31,7 @@ public class ChapterController {
     @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Создать главу внутри тома")
     @PostMapping("/volume/{volumeId}/chapter")
-    public ResponseEntity<ChapterShortResponseDTO> createChapterPlaceholderInVolume(@Valid ChapterCreateDTO dto,
+    public ResponseEntity<ChapterShortResponseDTO> createChapterPlaceholderInVolume(@RequestBody @Valid ChapterCreateDTO dto,
                                                                                    @PathVariable @Min(1) Long volumeId){
         ChapterShortResponseDTO responseDTO = chapterService
                 .createChapterPlaceHolder(dto, null, volumeId);
@@ -46,7 +46,7 @@ public class ChapterController {
     @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Создать главу внутри книги (без тома)")
     @PostMapping("/book/{bookId}/chapter")
-    public ResponseEntity<ChapterShortResponseDTO> createChapterPlaceholderInBook(@Valid ChapterCreateDTO dto,
+    public ResponseEntity<ChapterShortResponseDTO> createChapterPlaceholderInBook(@RequestBody @Valid ChapterCreateDTO dto,
                                                                                     @PathVariable @Min(1) Long bookId){
         ChapterShortResponseDTO responseDTO = chapterService
                 .createChapterPlaceHolder(dto, bookId, null);
@@ -60,7 +60,7 @@ public class ChapterController {
     @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Добавить текст к главе")
     @PutMapping("/chapter/{id}/content")
-    public ResponseEntity<ChapterFullDTO> addContent(@Valid ChapterAddContentDTO dto,
+    public ResponseEntity<ChapterFullDTO> addContent(@RequestBody @Valid ChapterAddContentDTO dto,
                                                      @PathVariable @Min(1) Long id){
         ChapterFullDTO responseDTO = chapterService.addContent(dto, id);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
@@ -73,7 +73,7 @@ public class ChapterController {
     @ApiResponse(responseCode = "401", description = "Вы не авторизованы")
     @Operation(summary = "Изменить название или номер главы")
     @PatchMapping("/chapter/{id}")
-    public ResponseEntity<ChapterShortResponseDTO> update(@Valid ChapterUpdateDTO dto,
+    public ResponseEntity<ChapterShortResponseDTO> update(@RequestBody @Valid ChapterUpdateDTO dto,
                                                           @PathVariable @Min(1) Long id){
         ChapterShortResponseDTO responseDTO = chapterService.update(id, dto);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);

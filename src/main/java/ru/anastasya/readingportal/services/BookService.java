@@ -1,161 +1,152 @@
 package ru.anastasya.readingportal.services;
 
-import ru.anastasya.readingportal.dao.*;
-import ru.anastasya.readingportal.dto.BookFilter;
-import ru.anastasya.readingportal.exception.*;
-import ru.anastasya.readingportal.models.*;
+import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.anastasya.readingportal.dto.*;
+import ru.anastasya.readingportal.exceptions.*;
+import ru.anastasya.readingportal.mappers.BookMapper;
+import ru.anastasya.readingportal.models.Book;
+import ru.anastasya.readingportal.models.Genre;
+import ru.anastasya.readingportal.models.User;
+import ru.anastasya.readingportal.repositories.BookRepository;
+import ru.anastasya.readingportal.repositories.GenreRepository;
+import ru.anastasya.readingportal.repositories.UserRepository;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
-
-//добавить возможность проверки есть ли тома у книги
+@AllArgsConstructor
+@Service
 public class BookService {
 
-    private final static BookService INSTANCE = new BookService();
+    private final BookRepository bookRepository;
+    private final UserRepository userRepository;
+    private final GenreRepository genreRepository;
+    private final VolumeService volumeService;
+    private final BookMapper bookMapper;
 
-    private BookService(){}
+    @Transactional
+    public BookResponseDTO createBookPlaceholder(CreateBookDTO dto, Long authorId){
+        User author = userRepository.findById(authorId).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
 
-    public static BookService getInstance(){
-        return INSTANCE;
+        Book book = bookMapper.fromCreateBookDTO(dto);
+        book.getAuthors().add(author);
+        Book bookNew = bookRepository.save(book);
+        volumeService.createDefaultVolume(book.getId());
+        return bookMapper.toBookResponseDTO(bookNew);
     }
 
-    private final BookDAO bookDAO = BookDAO.getInstance();
-    private final UserDAO userDAO = UserDAO.getInstance();
-    private final GenreDAO genreDAO = GenreDAO.getInstance();
-    private final ChapterService chapterService = ChapterService.getInstance();
-    private final VolumeService volumeService = VolumeService.getInstance();
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
+    @Transactional
+    public BookResponseDTO changeTitle(ChangeTitleDTO dto, Long bookId){
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
 
-    public Long createBookPlaceholder(Book book, Long authorId){
-        Objects.requireNonNull(book, "нельзя создать null book");
-
-        if (book.getTitle() == null || book.getTitle().isBlank()){
-            throw new ValidationException("Название не может быть пустым");
+        if (!book.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
         }
-        if (book.getTitle().length()>250){
-            throw new ValidationException("Название не может быть длиннее 250 символов");
-        }
-
-        Long bookId = bookDAO.save(book);
-        bookDAO.addAuthorToBook(bookId, authorId);
-
-        volumeService.createDefaultVolume(bookId, authorId);
-        return bookId;
+        book.setTitle(dto.newTitle());
+        return bookMapper.toBookResponseDTO(book);
     }
 
-    public void changeTitle(Long bookId, String newTitle, Long currentUserId){
-        Objects.requireNonNull(bookId, "нельзя изменить книгу с null id");
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
+    @Transactional
+    public BookResponseDTO addAuthorToBook(Long bookId, Long authorId, int version){
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
 
-        checkAuthority(bookId, currentUserId);
-
-        if (newTitle == null || newTitle.isBlank()){
-            throw new ValidationException("Название не может быть пустым");
-        }
-        if (newTitle.length()>250){
-            throw new ValidationException("Название не может быть длиннее 250 символов");
-        }
-
-        Book book = bookDAO.findById(bookId);
-        if (book == null){
-            throw new EntityNotFoundException("Книга не найдена");
-        }
-        book.setTitle(newTitle);
-
-        bookDAO.update(book);
-    }
-
-    public void addAuthorToBook(Long bookId, Long authorId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
-        if (!bookDAO.exists(bookId)){
-            throw new EntityNotFoundException("Такой книги не существует");
-        }
-        if (!userDAO.exists(authorId)){
-            throw new EntityNotFoundException("Такого пользователя не существует");
-        }
-        if (bookDAO.isUserAuthorOfBook(bookId, authorId)){
+        if (book.getAuthors().stream().anyMatch(u -> u.getId().equals(authorId))){
             throw new ConflictException("К книге уже добавлен этот автор");
         }
-        bookDAO.addAuthorToBook(bookId, authorId);
+        if (!book.getVersion().equals(version)){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
+        User author = userRepository.findById(authorId).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        book.getAuthors().add(author);
+        return bookMapper.toBookResponseDTO(book);
     }
 
-    public void addGenreToBook(Long bookId, Long genreId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
-        if (!bookDAO.exists(bookId)){
-            throw new EntityNotFoundException("Такой книги не существует");
-        }
-        if (!genreDAO.exists(genreId)){
-            throw new EntityNotFoundException("Такого жанра не существует");
-        }
-        if (bookDAO.isGenreAdded(bookId, genreId)){
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
+    @Transactional
+    public BookResponseDTO addGenreToBook(Long bookId, Long genreId, int version){
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+
+        if (book.getGenres().stream().anyMatch(g -> g.getId().equals(genreId))){
             throw new ConflictException("К книге уже добавлен этот жанр");
         }
-        bookDAO.addGenreToBook(bookId, genreId);
+        Genre genre = genreRepository.findById(genreId).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        if (!book.getVersion().equals(version)){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
+        book.getGenres().add(genre);
+        return bookMapper.toBookResponseDTO(book);
     }
 
-    public void deleteAuthorFromBook(Long bookId, Long authorId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
-        if (!bookDAO.isUserAuthorOfBook(bookId, authorId)){
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
+    @Transactional
+    public BookResponseDTO deleteAuthorFromBook(Long bookId, Long authorId, int version){
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+
+        if (book.getAuthors().stream().noneMatch(a -> a.getId().equals(authorId))){
             throw new ConflictException("К книге не добавлен этот автор");
         }
-        bookDAO.deleteAuthorFromBook(bookId, authorId);
+        User author = userRepository.findById(authorId).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        if (!book.getVersion().equals(version)){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
+        book.getAuthors().remove(author);
+        return bookMapper.toBookResponseDTO(book);
     }
 
-    public void deleteGenreFromBook(Long bookId, Long genreId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
-        if (bookDAO.isGenreAdded(bookId, genreId)){
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
+    @Transactional
+    public BookResponseDTO deleteGenreFromBook(Long bookId, Long genreId, int version){
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+
+        if (book.getGenres().stream().noneMatch(g -> g.getId().equals(genreId))){
             throw new ConflictException("К книге не добавлен этот жанр");
         }
-        bookDAO.deleteGenreFromBook(bookId, genreId);
+        Genre genre = genreRepository.findById(genreId).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        if (!book.getVersion().equals(version)){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
+        book.getGenres().remove(genre);
+        return bookMapper.toBookResponseDTO(book);
     }
 
-    public List<Book> findBooksByBookFilter(BookFilter bookFilter){
-        return bookDAO.findBooksByBookFilter(bookFilter);
-    }
-
-    public List<Book> findFullBooksByBookFilter(BookFilter bookFilter){
-        List<Book> books = bookDAO.findBooksByBookFilter(bookFilter);
-        if (!books.isEmpty()){
-            HashMap<Long, List<User>> authorsMap = userDAO.findAllAuthorsOfBooks(books);
-            HashMap<Long, List<Genre>> genresMap = genreDAO.findAllGenresOfBooks(books);
-
-            for (Book book : books){
-                book.setAuthors(authorsMap.get(book.getId()));
-                book.setGenres(genresMap.get(book.getId()));
+    @Transactional(readOnly = true)
+    public Page<BookSummaryDTO> findBooksByBookFilter(BookFilter bookFilter, int size, int page){
+        Sort sort = Sort.unsorted();
+        if (bookFilter.getBookSortStrategy() != null){
+            switch (bookFilter.getBookSortStrategy()){
+                case NEWEST -> sort = Sort.by("createdAt").descending();
+                case ALPHABETICAL -> sort = Sort.by("title").ascending();
             }
         }
-        return books;
+        Pageable pageable = PageRequest.of(page-1, size, sort);
+        Page<Book> books = bookRepository.findBooksByBookFilter(bookFilter.getTitle(), bookFilter.getAuthorsIds(), bookFilter.getGenresIds(), pageable);
+        return books.map(b -> new BookSummaryDTO(b.getId(), b.getTitle()));
     }
 
-    public long countBooksByBookFilter(BookFilter bookFilter){
-        return bookDAO.countBooksByBookFilter(bookFilter);
+    @Transactional(readOnly = true)
+    public BookResponseDTO findById(Long id){
+        Book book = bookRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+        return bookMapper.toBookResponseDTO(book);
     }
 
-    public Book findById(Long id){
-        return bookDAO.findById(id);
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
+    @Transactional
+    public void deleteBook(Long bookId){
+        Book book = bookRepository.findById(bookId).orElseThrow(() -> new EntityNotFoundException("Книга не найдена"));
+
+        bookRepository.delete(book);
     }
 
-    public void deleteBook(Long bookId, Long currentUserId){
-        checkAuthority(bookId, currentUserId);
-
-        List<Volume> volumes = volumeService.findAllByBookId(bookId);
-        for (Volume volume : volumes){
-            chapterService.deleteAllChapter(volume.getId(), currentUserId);
-        }
-        volumeService.deleteAllVolume(bookId, currentUserId);
-        volumeService.deleteDefaultVolume(bookId, currentUserId);
-        bookDAO.deleteAllGenresFromBook(bookId);
-        bookDAO.deleteAllAuthorsFromBook(bookId);
-        bookDAO.delete(bookId);
-    }
-
+    @Transactional
     public void deleteAllBookByUserId(Long userId){
-        deleteAllBookByUserId(userId);
+        bookRepository.deleteAllByUserId(userId);
     }
 
-    private void checkAuthority(Long bookId, Long userId){
-        if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthenticationException("У вас нет прав");
-        }
-    }
+
 }

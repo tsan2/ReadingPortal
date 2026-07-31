@@ -1,68 +1,19 @@
 package ru.anastasya.readingportal.dto;
 
-public class ChapterCreateDTO {
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.PositiveOrZero;
+import ru.anastasya.readingportal.dto.validation.ValidTitle;
 
-    private Long bookId;
-    private String title;
-    private int chapterMainNumber;
-    private int chapterSubNumber;
-    private Long volumeId;
-
-    public ChapterCreateDTO(Long bookId, String title, int chapterMainNumber, int chapterSubNumber) {
-        this.bookId = bookId;
-        this.title = title;
-        this.chapterMainNumber = chapterMainNumber;
-        this.chapterSubNumber = chapterSubNumber;
-        this.volumeId = null;
-    }
-
-    public ChapterCreateDTO(Long bookId, String title, int chapterMainNumber, int chapterSubNumber, Long volumeId) {
-        this.bookId = bookId;
-        this.title = title;
-        this.chapterMainNumber = chapterMainNumber;
-        this.chapterSubNumber = chapterSubNumber;
-        this.volumeId = volumeId;
-    }
-
-    public Long getBookId() {
-        return bookId;
-    }
-
-    public void setBookId(Long bookId) {
-        this.bookId = bookId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-
-    public int getChapterMainNumber() {
-        return chapterMainNumber;
-    }
-
-    public void setChapterMainNumber(int chapterMainNumber) {
-        this.chapterMainNumber = chapterMainNumber;
-    }
-
-    public int getChapterSubNumber() {
-        return chapterSubNumber;
-    }
-
-    public void setChapterSubNumber(int chapterSubNumber) {
-        this.chapterSubNumber = chapterSubNumber;
-    }
-
-    public Long getVolumeId() {
-        return volumeId;
-    }
-
-    public void setVolumeId(Long volumeId) {
-        this.volumeId = volumeId;
-    }
+@Schema(description = "Создание шаблона главы (без текста)")
+public record ChapterCreateDTO(
+        @ValidTitle
+        @Schema(description = "название", example = "восхождение")
+        String title,
+        @PositiveOrZero
+        @Schema(description = "первая часть номера главы (до точки)", example = "1")
+        int chapterMainNumber,
+        @PositiveOrZero(message = "Номер главы не может быть меньше 0")
+        @Schema(description = "вторая часть номера главы (после точки, подглава)", example = "1")
+        int chapterSubNumber) {
 }
 

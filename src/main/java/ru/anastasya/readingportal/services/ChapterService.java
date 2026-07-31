@@ -1,154 +1,213 @@
 package ru.anastasya.readingportal.services;
 
-import ru.anastasya.readingportal.dao.BookDAO;
-import ru.anastasya.readingportal.dao.ChapterDAO;
-import ru.anastasya.readingportal.dto.ChapterCreateDTO;
-import ru.anastasya.readingportal.exception.AuthenticationException;
-import ru.anastasya.readingportal.exception.ConflictException;
-import ru.anastasya.readingportal.exception.ServiceException;
-import ru.anastasya.readingportal.exception.ValidationException;
+import lombok.AllArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
+import ru.anastasya.readingportal.dto.*;
+import ru.anastasya.readingportal.exceptions.*;
+import ru.anastasya.readingportal.mappers.ChapterMapper;
+import ru.anastasya.readingportal.models.Book;
 import ru.anastasya.readingportal.models.Chapter;
 import ru.anastasya.readingportal.models.Volume;
-import ru.anastasya.readingportal.utils.OperationResult;
+import ru.anastasya.readingportal.repositories.BookRepository;
+import ru.anastasya.readingportal.repositories.ChapterRepository;
+import ru.anastasya.readingportal.repositories.VolumeRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@Validated
+@AllArgsConstructor
+@Service
 public class ChapterService {
+    private final ChapterRepository chapterRepository;
+    private final VolumeRepository volumeRepository;
+    private final BookRepository bookRepository;
+    private final ChapterMapper chapterMapper;
 
-    private final static ChapterService INSTANCE = new ChapterService();
-
-    private ChapterService(){}
-
-    public static ChapterService getInstance(){
-        return INSTANCE;
-    }
-
-    private final ChapterDAO chapterDAO = ChapterDAO.getInstance();
-    private final VolumeService volumeService = VolumeService.getInstance();
-    private final BookDAO bookDAO = BookDAO.getInstance();
-
-
-    // и возможно в подсчете глав добавить условие не дефолтная и в уникальном индексе
-    public OperationResult createChapterPlaceHolder(ChapterCreateDTO dto, Long currentUserId){
-        if (dto.getVolumeId() == null){
-            Volume volume = volumeService.findDefaultVolume(dto.getBookId());
-            dto.setVolumeId(volume.getId());
+    @PreAuthorize("@bookSecurity.canCreateChapterPlaceHolder(#bookId, #volumeId, principal.id)")
+    @Transactional
+    public ChapterShortResponseDTO createChapterPlaceHolder(ChapterCreateDTO dto,
+                                                            Long bookId, Long volumeId){
+        Volume volume = null;
+        if (volumeId == null){
+            Book book = bookRepository.findById(bookId)
+                    .orElseThrow(() -> new EntityNotFoundException("Книга с таким айди не найдена"));
+            volume = volumeRepository.findByBookIdAndIsDefaultTrue(bookId)
+                    .orElseThrow(() -> new EntityNotFoundException("У этой книги есть тома. Нельзя добавить главу напрямую к книге"));
+            volumeId = volume.getId();
+        } else {
+            volume = volumeRepository.findById(volumeId).orElseThrow(()
+                    -> new EntityNotFoundException("Том с таким айди не найден"));
         }
 
-        checkAuthorityByVolumeId(dto.getVolumeId(), currentUserId);
-
-        Chapter chapter = new Chapter(dto.getTitle(), dto.getChapterMainNumber(), dto.getChapterSubNumber(), dto.getVolumeId());
-
-        Objects.requireNonNull(chapter.getVolumeId(), "volumeId не может быть null");
+        Chapter chapter = new Chapter(dto.title(), dto.chapterMainNumber(), dto.chapterSubNumber());
 
         String warningMessage = null;
 
-        if (chapter.getTitle() == null || chapter.getTitle().isBlank()){
-            throw new ValidationException("Название не может быть пустым");
-        }
-        if (chapter.getTitle().length()>250){
-            throw new ValidationException("Название не может быть длиннее 250 символов");
-        }
-        if (chapter.getChapterMainNumber() < 0 || chapter.getChapterSubNumber() < 0){
-            throw new ValidationException("Номер главы не может быть меньше 0");
-        }
-        if (chapterDAO.existsChapterNumber(chapter.getVolumeId(), chapter.getChapterMainNumber(), chapter.getChapterSubNumber())){
+        if (chapterRepository.existsByVolumeIdAndChapterMainNumberAndChapterSubNumber(volumeId,
+                chapter.getChapterMainNumber(), chapter.getChapterSubNumber())){
             throw new ConflictException("Такой номер главы уже существует");
         }
 
-        int maxNumber = chapterDAO.findLastMainNumberByVolumeId(chapter.getVolumeId());
-        if (chapter.getChapterMainNumber() > maxNumber + 1){
+        Integer maxNumber = chapterRepository.findLastMainNumberByVolumeId(volumeId);
+        if (maxNumber!=null && chapter.getChapterMainNumber() > maxNumber + 1){
             warningMessage = "Вы пропускаете номер главы. Последний номер сейчас: " + maxNumber;
         }
 
-        Long id = chapterDAO.save(chapter);
-        return new OperationResult(id, true, warningMessage);
+        chapter.setVolume(volume);
+        Chapter chapterSaved = chapterRepository.saveAndFlush(chapter);
+
+        ChapterShortResponseDTO chapterShortResponseDTO = chapterMapper.toChapterShortResponseDTO(chapterSaved);
+        chapterShortResponseDTO.setVolumeId(volumeId);
+        chapterShortResponseDTO.setWarningMessage(warningMessage);
+
+        return chapterShortResponseDTO;
     }
 
-    public void addContent(Long chapterId, String content, Long currentUserId){
-        checkAuthorityByChapterId(chapterId, currentUserId);
-        if (content.length() > 2_000_000){
-            throw new ValidationException("Текст главы слишком длинный. Максимум 2 миллиона символов");
+    @PreAuthorize("@bookSecurity.checkAuthorityByChapterId(#chapterId, principal.id)")
+    @Transactional
+    public ChapterFullDTO addContent(ChapterAddContentDTO chapterAddContentDTO, Long chapterId){
+        Chapter chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new EntityNotFoundException("Глава с таким айди не найдена"));
+        if (!Objects.equals(chapterAddContentDTO.version(), chapter.getVersion())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
         }
 
-        chapterDAO.updateContent(chapterId, content);
+        chapter.setContent(chapterAddContentDTO.content());
+
+        ChapterFullDTO chapterFullDTO = chapterMapper.toChapterFullDTO(chapter);
+        chapterFullDTO.setVolumeId(chapter.getVolume().getId());
+        return chapterFullDTO;
     }
 
-    public Chapter findFullChapter(Long id){
-        return chapterDAO.findFullById(id);
-    }
 
-    public void changeTitle(Long id, String newTitle, Long currentUserId){
-        checkAuthorityByChapterId(id, currentUserId);
-        Chapter chapter = chapterDAO.findInfoById(id);
-        if (newTitle == null || newTitle.isBlank()){
-            throw new ValidationException("Название не может быть пустым");
+    @PreAuthorize("@bookSecurity.checkAuthorityByChapterId(#id, principal.id)")
+    @Transactional
+    public ChapterShortResponseDTO update(Long id, ChapterUpdateDTO dto){
+        ChapterShortDTO chapter = chapterRepository.findShortById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Глава с таким айди не найдена"));
+
+        if (!Objects.equals(dto.version(), chapter.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
         }
-        if (chapter.getTitle().length()>250){
-            throw new ValidationException("Название не может быть длиннее 250 символов");
-        }
-        chapter.setTitle(newTitle);
 
-        chapterDAO.updateMetadata(chapter);
+        ChapterShortResponseDTO chapterUpdated = chapterMapper.fromChapterShortDTOToResponse(chapter);
+
+        if (dto.newTitle() != null){
+            ChangeTitleDTO changeTitleDTO = new ChangeTitleDTO(dto.newTitle(), dto.version());
+            chapterUpdated = chapterMapper.fromChapterShortDTOToResponse(changeTitle(changeTitleDTO, id));
+        }
+
+        if (dto.newChapterMainNumber() != null || dto.newChapterSubNumber() != null){
+            ChangeChapterNumberDTO changeChapterNumberDTO = getChangeChapterNumberDTO(dto, chapter);
+
+            chapterUpdated = changeChapterNumber(changeChapterNumberDTO, id);
+        }
+        return chapterUpdated;
     }
 
-    public OperationResult changeChapterNumber(Long id, int chapterMainNumber, int chapterSubNumber, Long currentUserId){
-        checkAuthorityByChapterId(id, currentUserId);
+    private ChangeChapterNumberDTO getChangeChapterNumberDTO(ChapterUpdateDTO dto, ChapterShortDTO chapter) {
+        Integer chapterMainNumber = null;
+        Integer chapterSubNumber = null;
+        if (dto.newChapterSubNumber() == null){
+            chapterMainNumber = dto.newChapterMainNumber();
+            chapterSubNumber = chapter.chapterSubNumber();
+        }
+        else if(dto.newChapterMainNumber() == null){
+            chapterSubNumber = dto.newChapterSubNumber();
+            chapterMainNumber = chapter.chapterMainNumber();
+        }
+        else{
+            chapterSubNumber = dto.newChapterSubNumber();
+            chapterMainNumber = dto.newChapterMainNumber();
+        }
+        ChangeChapterNumberDTO changeChapterNumberDTO = new ChangeChapterNumberDTO(
+                chapterMainNumber,
+                chapterSubNumber,
+                dto.version());
+        return changeChapterNumberDTO;
+    }
 
-        Chapter chapter = chapterDAO.findInfoById(id);
+    private ChapterShortDTO changeTitle(ChangeTitleDTO dto, Long id){
+
+        chapterRepository.changeTitle(dto.newTitle(), id);
+
+        return chapterRepository.findShortById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Глава с таким айди не найдена"));
+    }
+
+    private ChapterShortResponseDTO changeChapterNumber(ChangeChapterNumberDTO dto, Long id){
         String warningMessage = null;
 
-        if (chapter.getChapterMainNumber() < 0 || chapter.getChapterSubNumber() < 0){
-            throw new ValidationException("Номер главы не может быть меньше 0");
-        }
-        if (chapterDAO.existsChapterNumber(chapter.getVolumeId(), chapter.getChapterMainNumber(), chapter.getChapterSubNumber())){
+        Long volumeId = chapterRepository.findVolumeIdByChapterId(id);
+
+        //здесь если была одна глава с номером 2.4 по идее ее смена на 1.2 даст предупреждение
+        if (chapterRepository.existsByVolumeIdAndChapterMainNumberAndChapterSubNumber(volumeId,
+                dto.chapterMainNumber(), dto.chapterSubNumber())){
             throw new ConflictException("Такой номер главы уже существует");
         }
-        int maxNumber = chapterDAO.findLastMainNumberByVolumeId(chapter.getVolumeId());
-        if (chapter.getChapterMainNumber() > maxNumber + 1){
+        int maxNumber = chapterRepository.findLastMainNumberByVolumeId(volumeId);
+        if (dto.chapterMainNumber() > maxNumber + 1){
             warningMessage = "Вы пропускаете номер главы. Последний номер сейчас: " + maxNumber;
         }
 
-        chapter.setChapterMainNumber(chapterMainNumber);
-        chapter.setChapterSubNumber(chapterSubNumber);
+        chapterRepository.changeChapterNumber(dto.chapterMainNumber(), dto.chapterSubNumber(), id);
+        ChapterShortDTO chapterShortDTO = chapterRepository.findShortById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Глава с таким айди не найдена"));
 
-        chapterDAO.updateMetadata(chapter);
-        return new OperationResult(null, true, warningMessage);
+        ChapterShortResponseDTO chapterShortResponseDTO = chapterMapper.fromChapterShortDTOToResponse(chapterShortDTO);
+        chapterShortResponseDTO.setWarningMessage(warningMessage);
+        chapterShortResponseDTO.setVolumeId(volumeId);
+
+        return chapterShortResponseDTO;
     }
 
-    public List<Chapter> findAllByVolumeId(Long volumeId){
-        return chapterDAO.findAllInfoByVolumeId(volumeId);
-    }
-
-    public Chapter findInfoById(Long id){
-        return chapterDAO.findInfoById(id);
-    }
-
-    public void deleteChapter(Long id, Long currentUserId){
-        checkAuthorityByChapterId(id, currentUserId);
-        chapterDAO.delete(id);
-    }
-
-    public void deleteAllChapter(Long volumeId, Long currentUserId){
-        checkAuthorityByVolumeId(volumeId, currentUserId);
-        chapterDAO.deleteAllByVolumeId(volumeId);
-    }
-
-    private void checkAuthorityByChapterId(Long chapterId, Long userId){
-        Long volumeId = chapterDAO.findInfoById(chapterId).getVolumeId();
-        Long bookId = volumeService.findById(volumeId).getBookId();
-
-        if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthenticationException("У вас нет прав");
+    @Transactional(readOnly = true)
+    public List<ChapterShortDTO> findAllShortByVolumeIdOrBookId(FindAllShortChapterDTO dto) {
+        List<ChapterShortDTO> chapterShortDTOS = new ArrayList<>();
+        if (dto.volumeId() == null){
+            if (dto.bookId() == null){
+                throw new ValidationException("Айди книги не может быть пустым");
+            }
+            Book book = bookRepository.findById(dto.bookId())
+                    .orElseThrow(() -> new EntityNotFoundException("Книга с таким айди не найдена"));
+            Volume volume = volumeRepository.findByBookIdAndIsDefaultTrue(dto.bookId())
+                    .orElseThrow(() -> new ConflictException("У этой книги главы находятся внутри томов"));
+            chapterShortDTOS = chapterRepository.findAllShortByVolumeId(volume.getId());
         }
-    }
-
-    private void checkAuthorityByVolumeId(Long volumeId, Long userId){
-        Long bookId = volumeService.findById(volumeId).getBookId();
-
-        if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthenticationException("У вас нет прав");
+        else{
+            Volume volume = volumeRepository.findById(dto.volumeId())
+                    .orElseThrow(() -> new EntityNotFoundException("Том с таким айди не найден"));
+            chapterShortDTOS = chapterRepository.findAllShortByVolumeId(dto.volumeId());
         }
+        return chapterShortDTOS;
     }
+
+//    public ChapterShortDTO findShortById(Long id){
+//        return chapterRepository.findShortById(id)
+//                .orElseThrow(() -> new EntityNotFoundException("Глава с таким айди не найдена"));
+//    }
+
+    @Transactional(readOnly = true)
+    public ChapterFullDTO findFullById(Long id){
+        return chapterRepository.findFullById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Глава с таким айди не найдена"));
+    }
+
+    @PreAuthorize("@bookSecurity.checkAuthorityByChapterId(#id, principal.id)")
+    @Transactional
+    public void deleteChapter(Long id) {
+        chapterRepository.deleteById(id);
+    }
+
+//скорее всего не надо
+//    public void deleteAllChapter(Long volumeId, Long currentUserId){
+//        checkAuthorityByVolumeId(volumeId, currentUserId);
+//        chapterDAO.deleteAllByVolumeId(volumeId);
+//    }
+
 }

@@ -1,55 +1,64 @@
 package ru.anastasya.readingportal.services;
 
-import ru.anastasya.readingportal.dao.GenreDAO;
-import ru.anastasya.readingportal.exception.ServiceException;
-import ru.anastasya.readingportal.exception.ValidationException;
+import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.anastasya.readingportal.dto.GenreRequestDTO;
+import ru.anastasya.readingportal.dto.GenreResponseDTO;
+import ru.anastasya.readingportal.exceptions.EntityNotFoundException;
+import ru.anastasya.readingportal.mappers.GenreMapper;
 import ru.anastasya.readingportal.models.Genre;
+import ru.anastasya.readingportal.repositories.GenreRepository;
 
-import java.util.List;
-import java.util.Objects;
-
+@Service
+@AllArgsConstructor
 public class GenreService {
 
-    private final static GenreService INSTANCE = new GenreService();
+    private final GenreRepository genreRepository;
+    private final GenreMapper genreMapper;
 
-    private GenreService(){}
-
-    public static GenreService getInstance(){
-        return INSTANCE;
+    @Transactional
+    public GenreResponseDTO createGenre(GenreRequestDTO genreRequestDTO){
+        Genre genre = genreMapper.fromGenreRequestDTO(genreRequestDTO);
+        Genre newGenre = genreRepository.save(genre);
+        return genreMapper.toGenreResponseDTO(genre);
     }
 
-    private final GenreDAO genreDAO = GenreDAO.getInstance();
-
-
-    public void createGenre(Genre genre){
-        Objects.requireNonNull(genre, "Нельзя создать null genre");
-        if (genre.getName() == null || genre.getName().isBlank()){
-            throw new ValidationException("Имя не может быть пустым");
-        }
-        if (genre.getName().length() > 100){
-            throw new ValidationException("Имя слишком большое. Максимальная длина 100 символов");
-        }
-
-        genreDAO.save(genre);
-    }
-
+    @Transactional
     public void deleteGenre(Long id){
-        genreDAO.delete(id);
+        if (!existsById(id)){
+            throw new EntityNotFoundException("Жанр не найден");
+        }
+        genreRepository.deleteById(id);
     }
 
-    public Genre findById(Long id){
-        return genreDAO.findById(id);
+    @Transactional(readOnly = true)
+    public GenreResponseDTO findById(Long id){
+        Genre genre = genreRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        return genreMapper.toGenreResponseDTO(genre);
     }
 
-    public Genre findByName(String name){
-        return genreDAO.findByName(name);
+    @Transactional(readOnly = true)
+    public GenreResponseDTO findByName(String name){
+        Genre genre = genreRepository.findByName(name).orElseThrow(() -> new EntityNotFoundException("Жанр не найден"));
+        return genreMapper.toGenreResponseDTO(genre);
     }
 
-    public List<Genre> findAll(){
-        return genreDAO.findAll();
+    @Transactional(readOnly = true)
+    public Page<GenreResponseDTO> findAll(int size, int page){
+        Pageable pageable = PageRequest.of(page-1, size);
+        return genreRepository.findAll(pageable).map(genreMapper :: toGenreResponseDTO);
     }
 
-    public List<Genre> findAllByBookId(Long bookId){
-        return genreDAO.findAllByBookId(bookId);
+    @Transactional(readOnly = true)
+    private boolean existsById(Long id){
+        return genreRepository.existsById(id);
     }
+
+//    public List<Genre> findAllByBookId(Long bookId){
+//        return genreDAO.findAllByBookId(bookId);
+//    }
 }

@@ -1,110 +1,44 @@
 package ru.anastasya.readingportal.models;
 
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@DynamicUpdate
+@Table(name = "chapters")
+@Entity
 public class Chapter {
 
+
+    @Id
+    @SequenceGenerator(name = "chapter_seq", sequenceName = "chapter_sequence", allocationSize = 5)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "chapter_seq")
     private Long id;
+    @Column(nullable = false)
     private String title;
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String content;
+    @Column(name = "chapter_main_number", nullable = false)
     private int chapterMainNumber;
+    @Column(name = "chapter_sub_number")
     private int chapterSubNumber;
-    private Long volumeId;
+    @Version
+    private Integer version;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "volume_id")
+    private Volume volume;
 
-    public Chapter() {
-    }
-
-    public Chapter(String title, int chapterMainNumber, int chapterSubNumber, Long volumeId) {
-        this.id = null;
+    public Chapter(String title, int chapterMainNumber, int chapterSubNumber){
         this.title = title;
-        this.content = null;
         this.chapterMainNumber = chapterMainNumber;
         this.chapterSubNumber = chapterSubNumber;
-        this.volumeId = volumeId;
-    }
-
-    public Chapter(String title, String content, int chapterMainNumber, int chapterSubNumber, Long volumeId) {
-        this.id = null;
-        this.title = title;
-        this.content = content;
-        this.chapterMainNumber = chapterMainNumber;
-        this.chapterSubNumber = chapterSubNumber;
-        this.volumeId = volumeId;
-    }
-
-    public Chapter(Long id, String title, int chapterMainNumber, int chapterSubNumber, Long volumeId) {
-        this.id = id;
-        this.title = title;
-        this.content = null;
-        this.chapterMainNumber = chapterMainNumber;
-        this.chapterSubNumber = chapterSubNumber;
-        this.volumeId = volumeId;
-    }
-
-    public Chapter(Long id, String title, String content, int chapterMainNumber, int chapterSubNumber, Long volumeId) {
-        this.id = id;
-        this.title = title;
-        this.content = content;
-        this.chapterMainNumber = chapterMainNumber;
-        this.chapterSubNumber = chapterSubNumber;
-        this.volumeId = volumeId;
-    }
-
-    @Override
-    public String toString() {
-        return "Chapter{" +
-                "id=" + id +
-                ", title='" + title + '\'' +
-                ", content='" + content + '\'' +
-                ", chapterMainNumber=" + chapterMainNumber +
-                ", chapterSubNumber=" + chapterSubNumber +
-                ", volumeId=" + volumeId +
-                '}';
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public int getChapterMainNumber() {
-        return chapterMainNumber;
-    }
-
-    public void setChapterMainNumber(int chapterMainNumber) {
-        this.chapterMainNumber = chapterMainNumber;
-    }
-
-    public int getChapterSubNumber() {
-        return chapterSubNumber;
-    }
-
-    public void setChapterSubNumber(int chapterSubNumber) {
-        this.chapterSubNumber = chapterSubNumber;
-    }
-
-    public Long getVolumeId() {
-        return volumeId;
-    }
-
-    public void setVolumeId(Long volumeId) {
-        this.volumeId = volumeId;
     }
 }

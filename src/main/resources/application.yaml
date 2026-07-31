@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: readingportal
+  datasource:
+    url: jdbc:postgresql://localhost:5432/reading_portal_db
+    username: postgres
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+server:
+  servlet:
+    context-path: /reading-portal
+  error:
+    include-message: always
+    include-exception: true
+springdoc:
+  swagger-ui:
+    show-common-extensions: true
+app:
+  admin:
+    password: ${ADMIN_PASSWORD:1234}
+    email: ${ADMIN_EMAIL:admin@example.com}
+jwt:
+  secret: ${JWT_SECRET_KEY:c3VwZXJfc2VjcmV0X2p3dF9zdHJpbmdfZm9yX2hzNTEyX2FsZ29yaXRobV9zYWZl}

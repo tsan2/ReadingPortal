@@ -1,162 +1,214 @@
 package ru.anastasya.readingportal.services;
 
-import ru.anastasya.readingportal.dao.BookDAO;
-import ru.anastasya.readingportal.dao.VolumeDAO;
-import ru.anastasya.readingportal.exception.AuthenticationException;
-import ru.anastasya.readingportal.exception.ConflictException;
-import ru.anastasya.readingportal.exception.ValidationException;
+import lombok.AllArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.anastasya.readingportal.dto.*;
+import ru.anastasya.readingportal.exceptions.*;
+import ru.anastasya.readingportal.mappers.VolumeMapper;
+import ru.anastasya.readingportal.models.Book;
 import ru.anastasya.readingportal.models.Volume;
-import ru.anastasya.readingportal.utils.OperationResult;
+import ru.anastasya.readingportal.repositories.BookRepository;
+import ru.anastasya.readingportal.repositories.VolumeRepository;
 
 import java.util.List;
-import java.util.Objects;
 
+@AllArgsConstructor
+@Service
 public class VolumeService {
 
-    private final static VolumeService INSTANCE = new VolumeService();
+    private final VolumeRepository volumeRepository;
+    private final BookRepository bookRepository;
+    private final VolumeMapper volumeMapper;
 
-    private VolumeService(){}
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
+    @Transactional
+    public VolumeResponseDTO createVolume(VolumeRequest volumeRequest, Long bookId){
+        Volume volume = volumeMapper.fromVolumeRequest(volumeRequest);
+        volume.setDefault(false);
 
-    public static VolumeService getInstance(){
-        return INSTANCE;
-    }
-
-    private final VolumeDAO volumeDAO = VolumeDAO.getInstance();
-    private final BookDAO bookDAO = BookDAO.getInstance();
-
-    public OperationResult createVolume(Volume volume, Long currentUserId){
-        Objects.requireNonNull(volume.getBookId(), "bookId не может быть null");
-
-        checkAuthorityByBookId(volume.getBookId(), currentUserId);
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException("Книга с таким айди не найдена"));
 
         String warningMessage = null;
         Long id = null;
 
-        if (volume.getTitle() == null || volume.getTitle().isBlank()){
-            throw new ValidationException("Название не может быть пустым");
-        }
-        if (volume.getTitle().length()>250){
-            throw new ValidationException("Название не может быть длиннее 250 символов");
-        }
-        if (volume.getVolumeMainNumber() < 0 || volume.getVolumeSubNumber() < 0){
-            throw new ValidationException("Номер тома не может быть меньше 0");
-        }
-        int maxNumber = volumeDAO.findLastMainNumberByBookId(volume.getBookId());
-        if (volume.getVolumeMainNumber() > maxNumber + 1){
+        Integer maxNumber = volumeRepository.findLastMainNumberByBookId(bookId);
+        if (maxNumber != null && volume.getVolumeMainNumber() > maxNumber + 1){
             warningMessage = "Вы пропускаете номер тома. Последний номер сейчас: " + maxNumber;
         }
 
-        volume.setDefault(false);
+        Volume finalVolume = null;
+        if (volumeRepository.countByBookIdAndIsDefaultFalse(bookId)==0){
+            Volume defaultVolume = findDefaultVolume(bookId);
 
-        if (volumeDAO.getNotDefaultVolumeCountByBookId(volume.getBookId())==0){
-            Volume defaultVolume = findDefaultVolume(volume.getBookId());
-            volume.setId(defaultVolume.getId());
-            volumeDAO.update(volume);
+            defaultVolume.setVolumeMainNumber(volume.getVolumeMainNumber());
+            defaultVolume.setVolumeSubNumber(volume.getVolumeSubNumber());
+            defaultVolume.setTitle(volume.getTitle());
+            defaultVolume.setDefault(false);
+
+            finalVolume = volumeRepository.saveAndFlush(defaultVolume);
         }
         else{
-            if (volumeDAO.existsVolumeNumber(volume.getBookId(), volume.getVolumeMainNumber(), volume.getVolumeSubNumber())){
+            if (volumeRepository.existsByBookIdAndVolumeMainNumberAndVolumeSubNumberAndIsDefaultFalse
+                    (bookId,
+                    volume.getVolumeMainNumber(),
+                    volume.getVolumeSubNumber())){
                 throw new ConflictException("Такой номер тома уже существует");
             }
-            id = volumeDAO.save(volume);
+            volume.setBook(book);
+            finalVolume = volumeRepository.saveAndFlush(volume);
         }
-        return new OperationResult(id, true, warningMessage);
+
+        VolumeResponseDTO volumeResponseDTO = volumeMapper.toVolumeResponseDTO(finalVolume);
+        volumeResponseDTO.setWarningMessage(warningMessage);
+        return volumeResponseDTO;
     }
 
-    public Long createDefaultVolume(Long bookId, Long currentUserId){
-        checkAuthorityByBookId(bookId, currentUserId);
-        return volumeDAO.createDefaultByBookId(bookId);
+    @PreAuthorize("@bookSecurity.checkAuthorityByBookId(#bookId, principal.id)")
+    @Transactional
+    public Long createDefaultVolume(Long bookId){
+        Volume volume = new Volume("Базовый том", 0, 0, true);
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException("Книга с таким айди не найдена"));
+        book.addVolume(volume);
+        bookRepository.save(book);
+        return volume.getId();
     }
 
+    @Transactional(readOnly = true)
     public Volume findDefaultVolume(Long bookId){
-        return volumeDAO.findDefaultByBookId(bookId);
+        return volumeRepository.findByBookIdAndIsDefaultTrue(bookId)
+                .orElseThrow(() -> new EntityNotFoundException("Дефолтный том не найден"));
     }
 
-    public void changeTitle(Long id, String newTitle, Long currentUserId){
-        checkAuthorityByVolumeId(id, currentUserId);
+    @PreAuthorize("@bookSecurity.checkAuthorityByVolumeId(#volumeId, principal.id)")
+    @Transactional
+    public VolumeResponseDTO updateVolume(UpdateVolumeDTO updateVolumeDTO, Long volumeId){
+        Volume volume = volumeRepository.findById(volumeId)
+                .orElseThrow(() -> new EntityNotFoundException("Том с таким id не найден"));
 
-        Volume volume = volumeDAO.findById(id);
-        if (newTitle == null || newTitle.isBlank()){
-            throw new ValidationException("Название не может быть пустым");
+        VolumeResponseDTO volumeResponseDTO = null;
+        if (updateVolumeDTO.newTitle() != null){
+            ChangeTitleDTO changeTitleDTO = new ChangeTitleDTO(updateVolumeDTO.newTitle(), updateVolumeDTO.version());
+            volume = changeTitle(changeTitleDTO, volume);
+            volumeResponseDTO = volumeMapper.toVolumeResponseDTO(volume);
         }
-        if (volume.getTitle().length()>250){
-            throw new ValidationException("Название не может быть длиннее 250 символов");
-        }
-        volume.setTitle(newTitle);
 
-        volumeDAO.update(volume);
+        if (updateVolumeDTO.volumeMainNumber() != null || updateVolumeDTO.volumeSubNumber() != null){
+            ChangeVolumeNumberDTO changeVolumeNumberDTO = getChangeVolumeNumberDTO(updateVolumeDTO, volume);
+            volumeResponseDTO = changeVolumeNumber(changeVolumeNumberDTO, volume);
+        }
+
+        return volumeResponseDTO;
     }
 
-    public OperationResult changeVolumeNumber(Long id, int volumeMainNumber, int volumeSubNumber, Long currentUserId){
-        checkAuthorityByVolumeId(id, currentUserId);
+    private ChangeVolumeNumberDTO getChangeVolumeNumberDTO(UpdateVolumeDTO updateVolumeDTO, Volume volume) {
+        Integer volumeMainNumber = null;
+        Integer volumeSubNumber = null;
+        if (updateVolumeDTO.volumeSubNumber() == null){
+            volumeMainNumber = updateVolumeDTO.volumeMainNumber();
+            volumeSubNumber = volume.getVolumeSubNumber();
+        }
+        else if(updateVolumeDTO.volumeMainNumber() == null){
+            volumeSubNumber = updateVolumeDTO.volumeSubNumber();
+            volumeMainNumber = volume.getVolumeMainNumber();
+        }
+        else{
+            volumeSubNumber = updateVolumeDTO.volumeSubNumber();
+            volumeMainNumber = updateVolumeDTO.volumeMainNumber();
+        }
+        ChangeVolumeNumberDTO changeVolumeNumberDTO = new ChangeVolumeNumberDTO(
+                volumeMainNumber,
+                volumeSubNumber,
+                updateVolumeDTO.version());
+        return changeVolumeNumberDTO;
+    }
 
-        Volume volume = volumeDAO.findById(id);
+    private Volume changeTitle(ChangeTitleDTO dto, Volume volume){
+        if (!volume.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+        }
+        volume.setTitle(dto.newTitle());
+
+        return volume;
+    }
+
+    private VolumeResponseDTO changeVolumeNumber(ChangeVolumeNumberDTO dto, Volume volume){
         String warningMessage = null;
 
-        if (volume.getVolumeMainNumber() < 0 || volume.getVolumeSubNumber() < 0){
-            throw new ValidationException("Номер тома не может быть меньше 0");
+        if (!volume.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
         }
-        if (volumeDAO.existsVolumeNumber(volume.getBookId(), volume.getVolumeMainNumber(), volume.getVolumeSubNumber())){
+
+        if (volumeRepository.existsByBookIdAndVolumeMainNumberAndVolumeSubNumberAndIsDefaultFalse
+                (volume.getBook().getId(), dto.volumeMainNumber(), dto.volumeSubNumber())){
             throw new ValidationException("Такой номер тома уже существует");
         }
-        int maxNumber = volumeDAO.findLastMainNumberByBookId(volume.getBookId());
+
+        int maxNumber = volumeRepository.findLastMainNumberByBookId(volume.getBook().getId());
         if (volume.getVolumeMainNumber() > maxNumber + 1){
             warningMessage = "Вы пропускаете номер тома. Последний номер сейчас: " + maxNumber;
         }
 
-        volume.setVolumeMainNumber(volumeMainNumber);
-        volume.setVolumeSubNumber(volumeSubNumber);
+        volume.setVolumeMainNumber(dto.volumeMainNumber());
+        volume.setVolumeSubNumber(dto.volumeSubNumber());
 
-        volumeDAO.update(volume);
-        return new OperationResult(null, true, warningMessage);
+        VolumeResponseDTO volumeResponseDTO = volumeMapper.toVolumeResponseDTO(volume);
+        volumeResponseDTO.setWarningMessage(warningMessage);
+        return volumeResponseDTO;
     }
 
-    public List<Volume> findAllByBookId(Long book_id){
-        return volumeDAO.findNotDefaultAllByBookId(book_id);
+    @Transactional(readOnly = true)
+    public List<VolumeSummaryDTO> findAllByBookId(Long bookId){
+        List<Volume> volumes = volumeRepository.findAllByBookIdAndIsDefaultFalse(bookId);
+        return volumeMapper.toVolumeSummaryDTOs(volumes);
     }
 
-    public Volume findById(Long id){
-        return volumeDAO.findById(id);
+    @Transactional(readOnly = true)
+    public VolumeResponseDTO findById(Long id){
+        Volume volume = volumeRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Том не найден"));
+        return volumeMapper.toVolumeResponseDTO(volume);
     }
 
-    public void deleteVolume(Long id, Long currentUserId){
-        checkAuthorityByVolumeId(id, currentUserId);
-
-        volumeDAO.delete(id);
-        if (volumeDAO.getNotDefaultVolumeCountByBookId(id) == 0){
-            createDefaultVolume(id, currentUserId);
+    @PreAuthorize("@bookSecurity.checkAuthorityByVolumeId(#volumeId, principal.id)")
+    @Transactional
+    public void deleteVolume(Long id){
+        Volume volume = volumeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Том с таким id не найден"));
+        Book book = volume.getBook();
+        book.removeVolume(volume);
+        if (book.getVolumes().stream().noneMatch(v -> !v.isDefault())){
+            createDefaultVolume(book.getId());
         }
     }
 
-    public void deleteAllVolume(Long bookId, Long currentUserId){
-        checkAuthorityByBookId(bookId, currentUserId);
-        volumeDAO.deleteAllByBookId(bookId);
-        createDefaultVolume(bookId, currentUserId);
-    }
+    //вроде не нужно
+//    @Transactional
+//    public void deleteAllVolume(Long bookId, Long currentUserId){
+//        checkAuthorityByBookId(bookId, currentUserId);
+//        Book book = bookRepository.findById(bookId)
+//                .orElseThrow(() -> new EntityNotFoundException("Книга с таким id не найдена"));
+//        book.getVolumes().clear();
+//        createDefaultVolume(bookId, currentUserId);
+//    }
+//
+//    @Transactional
+//    public void deleteDefaultVolume(Long bookId, Long currentUserId){
+//        checkAuthorityByBookId(bookId, currentUserId);
+//        Book book = bookRepository.findById(bookId)
+//                .orElseThrow(() -> new EntityNotFoundException("Книга с таким id не найдена"));
+//        Volume volume = volumeRepository.findByBookIdAndIsDefaultTrue(bookId);
+//        if (volume.isDefault()){
+//            book.removeVolume(volume);
+//        }
+//    }
+//
+//    @Transactional(readOnly = true)
+//    public boolean existsNotDefaultVolume(Long bookId){
+//        return volumeRepository.countByBookIdAndIsDefaultFalse(bookId) > 0;
+//    }
 
-    public void deleteDefaultVolume(Long bookId, Long currentUserId){
-        checkAuthorityByBookId(bookId, currentUserId);
-        Volume volume = volumeDAO.findById(bookId);
-        if (volume.isDefault()){
-            volumeDAO.delete(bookId);
-        }
-    }
-
-    public boolean existsNotDefaultVolume(Long bookId){
-        return volumeDAO.getNotDefaultVolumeCountByBookId(bookId) > 0;
-    }
-
-    private void checkAuthorityByVolumeId(Long volumeId, Long userId){
-        Long bookId = volumeDAO.findById(volumeId).getBookId();
-
-        if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthenticationException("У вас нет прав");
-        }
-    }
-
-    private void checkAuthorityByBookId(Long bookId, Long userId){
-        if (!bookDAO.isUserAuthorOfBook(bookId, userId)){
-            throw new AuthenticationException("У вас нет прав");
-        }
-    }
 
 }

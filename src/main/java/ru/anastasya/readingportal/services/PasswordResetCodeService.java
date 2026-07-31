@@ -1,51 +1,49 @@
 package ru.anastasya.readingportal.services;
 
-import ru.anastasya.readingportal.dao.PasswordResetCodeDAO;
-import ru.anastasya.readingportal.dao.UserDAO;
-import ru.anastasya.readingportal.exception.ServiceException;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.anastasya.readingportal.models.PasswordResetCode;
 import ru.anastasya.readingportal.models.User;
+import ru.anastasya.readingportal.repositories.PasswordResetCodeRepository;
+import ru.anastasya.readingportal.repositories.UserRepository;
 import ru.anastasya.readingportal.utils.CodeGenerator;
 
 import java.time.LocalDateTime;
 
+@AllArgsConstructor
+@Service
 public class PasswordResetCodeService {
 
-    private final static PasswordResetCodeService INSTANCE = new PasswordResetCodeService();
-
-    private PasswordResetCodeService(){}
-
-    public static PasswordResetCodeService getInstance(){
-        return INSTANCE;
-    }
-
-    private final PasswordResetCodeDAO resetCodeDAO = PasswordResetCodeDAO.getInstance();
-    private final EmailService emailService = EmailService.getInstance();
-    private final UserDAO userDAO = UserDAO.getInstance();
+    private final PasswordResetCodeRepository resetCodeRepository;
+    private final EmailService emailService;
+    private final UserRepository userRepository;
 
 
+    @Transactional
     public void sendCode(String email){
-        User user = userDAO.findByEmail(email);
+        User user = userRepository.findByEmail(email).orElse(null);
 
         if (user==null){
             return;
         }
 
         String code = CodeGenerator.generateCode();
-        PasswordResetCode resetCode = new PasswordResetCode(user.getId(), code, LocalDateTime.now().plusMinutes(10));
+        PasswordResetCode resetCode = new PasswordResetCode(user, code, LocalDateTime.now().plusMinutes(10));
 
-        resetCodeDAO.saveCode(resetCode);
+        resetCodeRepository.save(resetCode);
 
         emailService.sendCode(email, code);
     }
 
+    @Transactional(readOnly = true)
     public boolean validCode(Long userId, String code){
-        PasswordResetCode resetCode = resetCodeDAO.findValidCode(userId, code);
+        PasswordResetCode resetCode = resetCodeRepository.findValidCode(userId, code);
         return resetCode != null;
     }
 
+    @Transactional
     public void deleteCodes(Long userId){
-        resetCodeDAO.deleteAllCodesByUserId(userId);
+        resetCodeRepository.deleteByUserId(userId);
     }
-
 }

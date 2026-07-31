@@ -6,14 +6,16 @@ id bigserial PRIMARY KEY,
 nickname VARCHAR(30) NOT NULL UNIQUE,
 email email NOT NULL UNIQUE,
 password_hash VARCHAR(255) NOT NULL,
-created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+version INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS books(
 id bigserial PRIMARY KEY,
 title text NOT NULL,
 date_changed TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+version INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS volumes(
@@ -22,7 +24,8 @@ title text,
 volume_main_number INTEGER NOT NULL,
 volume_sub_number INTEGER DEFAULT 0,
 book_id INTEGER REFERENCES books(id) ON DELETE CASCADE NOT NULL,
-is_default BOOLEAN DEFAULT false
+is_default BOOLEAN DEFAULT false,
+version INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS chapters(
@@ -31,6 +34,7 @@ title text,
 content text,
 chapter_main_number INTEGER NOT NULL,
 chapter_sub_number INTEGER DEFAULT 0,
+version INTEGER,
 volume_id INTEGER REFERENCES volumes(id) ON DELETE CASCADE NOT NULL
 );
 
@@ -67,6 +71,12 @@ expires_at TIMESTAMPTZ NOT NULL,
 created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 )
 
+CREATE TABLE IF NOT EXISTS refresh_tokens(
+    id uuid PRIMARY KEY,
+    user_id bigint REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
+)
+
 CREATE INDEX password_reset_codes_code_index
 on password_reset_codes(code);
 
@@ -90,3 +100,9 @@ on users(nickname);
 
 CREATE UNIQUE INDEX
 ON volumes(book_id, volume_main_number, volume_sub_number);
+
+CREATE UNIQUE INDEX
+ON books_authors(user_id, book_id);
+
+CREATE UNIQUE INDEX
+ON books_genres(book_id, genre_id);

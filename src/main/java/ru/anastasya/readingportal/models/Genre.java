@@ -1,45 +1,41 @@
 package ru.anastasya.readingportal.models;
 
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.Objects;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@ToString
+@Table(name = "genres")
+@Entity
 public class Genre {
 
+    @Id
+    @SequenceGenerator(name = "genre_seq", sequenceName = "genre_sequence", allocationSize = 5)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "genre_seq")
     private Long id;
+    @Column(unique = true, nullable = false)
     private String name;
 
-    public Genre() {
-
-    }
-
-    public Genre(String name) {
-        this.id = null;
-        this.name = name;
-    }
-
-    public Genre(Long id, String name) {
-        this.id = id;
+    public Genre(String name){
         this.name = name;
     }
 
     @Override
-    public String toString() {
-        return "Genre{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                '}';
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Genre)) return false;
+        Genre genre = (Genre) obj;
+
+        return Objects.equals(genre.getName(), this.getName());
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    @Override
+    public int hashCode() {
+        return this.getName().hashCode();
     }
 }

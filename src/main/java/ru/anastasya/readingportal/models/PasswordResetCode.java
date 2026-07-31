@@ -1,78 +1,44 @@
 package ru.anastasya.readingportal.models;
 
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.time.LocalDateTime;
 
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
+@Entity
+@EntityListeners(AuditingEntityListener.class)
+@Table(name="password_reset_codes")
 public class PasswordResetCode {
 
+    @Id
+    @SequenceGenerator(name = "password_seq", sequenceName = "password_sequence", allocationSize = 5)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "password_seq")
     private Long id;
-    private Long userId;
     private String code;
+    @Column(name = "expires_at")
     private LocalDateTime expiresAt;
+    @Column(name = "created_at", updatable = false)
+    @CreatedDate
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
-    public PasswordResetCode(Long userId, String code, LocalDateTime expiresAt) {
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    public PasswordResetCode(User user, String code, LocalDateTime expiresAt) {
         this.id = null;
-        this.userId = userId;
+        this.user = user;
         this.code = code;
         this.expiresAt = expiresAt;
     }
 
-    public PasswordResetCode(Long id, Long userId, String code, LocalDateTime expiresAt, LocalDateTime createdAt) {
-        this.id = id;
-        this.userId = userId;
-        this.code = code;
-        this.expiresAt = expiresAt;
-        this.createdAt = createdAt;
-    }
-
-    @Override
-    public String toString() {
-        return "PasswordResetCode{" +
-                "id=" + id +
-                ", userId=" + userId +
-                ", code='" + code + '\'' +
-                ", expiresAt=" + expiresAt +
-                ", createdAt=" + createdAt +
-                '}';
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public LocalDateTime getExpiresAt() {
-        return expiresAt;
-    }
-
-    public void setExpiresAt(LocalDateTime expiresAt) {
-        this.expiresAt = expiresAt;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }

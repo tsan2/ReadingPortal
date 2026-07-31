@@ -1,73 +1,97 @@
 package ru.anastasya.readingportal.services;
 
-import ru.anastasya.readingportal.dao.UserDAO;
-import ru.anastasya.readingportal.dto.UserSummaryDTO;
-import ru.anastasya.readingportal.exception.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.anastasya.readingportal.dto.*;
+import ru.anastasya.readingportal.exceptions.*;
+import ru.anastasya.readingportal.mappers.UserMapper;
+import ru.anastasya.readingportal.models.Role;
 import ru.anastasya.readingportal.models.User;
-import ru.anastasya.readingportal.utils.PasswordUtil;
+import ru.anastasya.readingportal.repositories.UserRepository;
 
-import java.util.List;
+import java.util.Set;
 
+@Service
 public class UserService {
 
-    private final static UserService INSTANCE = new UserService();
-
-    private UserService(){}
-
-    public static UserService getInstance(){
-        return INSTANCE;
+    public UserService(UserRepository userRepository, PasswordResetCodeService resetCodeService,
+                       UserMapper userMapper, BCryptPasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.resetCodeService = resetCodeService;
+        this.userMapper = userMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    private final UserDAO userDAO = UserDAO.getInstance();
-    private final PasswordResetCodeService resetCodeService = PasswordResetCodeService.getInstance();
-    private final BookService bookService = BookService.getInstance();
+    private final UserRepository userRepository;
+    private final PasswordResetCodeService resetCodeService;
+    private final UserMapper userMapper;
+    private final BCryptPasswordEncoder passwordEncoder;
 
+    @Value("${app.admin.email}")
+    private String ADMIN_EMAIL;
+    @Value("${app.admin.password}")
+    private String ADMIN_PASSWORD;
 
-    public void registerUser(User user){
-        validateUser(user);
-        if (user.getNickname().length()>30){
-            throw new ValidationException("Слишком длинный никнейм");
-        }
-        if (!user.getEmail().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+[.][a-zA-Z]{2,}$")){
-            throw new ValidationException("Это не адрес электронной почты");
-        }
-        if (userDAO.existsEmail(user.getEmail())){
+    @Transactional
+    public ProfileDTO registerUser(UserRegisterDTO userRegisterDTO){
+        User user = userMapper.fromUserRegisterDTO(userRegisterDTO);
+        String hashPassword = passwordEncoder.encode(userRegisterDTO.password());
+        user.setPasswordHash(hashPassword);
+
+        if (userRepository.existsByEmail(user.getEmail())){
             throw new ConflictException("Аккаунт с такой почтой уже существует");
         }
-        if (userDAO.existsNickname(user.getNickname())){
+        if (userRepository.existsByNickname(user.getNickname())){
             throw new ConflictException("Аккаунт с таким никнеймом уже существует");
         }
 
-        String hashPassword = PasswordUtil.hashPassword(user.getPasswordHash());
-        user.setPasswordHash(hashPassword);
-
-        userDAO.save(user);
+        user.setRoles(Set.of(Role.USER));
+        User newUser = userRepository.save(user);
+        return userMapper.toProfileDTO(newUser);
     }
 
-    public User authorizationUser(String emailOrNickname, String password){
-
-        User user = userDAO.findFullUserByEmailOrNickname(emailOrNickname);
-        if (user == null){
-            throw new AuthenticationException("Неверный логин или пароль");
-        }
-
-        if(PasswordUtil.checkPassword(password, user.getPasswordHash())){
-            user.setPasswordHash(null);
-            return user;
-        }
-        else{
-            throw new AuthenticationException("Неверный логин или пароль");
-        }
-
+    @Transactional(readOnly = true)
+    public ProfileDTO login(Long id){
+        User user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        return userMapper.toProfileDTO(user);
     }
 
+//    @Transactional(readOnly = true)
+//    public User authorizationUser(String emailOrNickname, String password){
+//
+//        User user = userRepository.findByEmailOrNickname(emailOrNickname);
+//        if (user == null){
+//            throw new AuthenticationException("Неверный логин или пароль");
+//        }
+//
+//        if(passwordEncoder.matches(password, user.getPasswordHash())){
+//            user.setPasswordHash(null);
+//            return user;
+//        }
+//        else{
+//            throw new AuthenticationException("Неверный логин или пароль");
+//        }
+//
+//    }
 
-    public void changePassword(Long id, String oldPassword, String newPassword){
+    @Transactional
+    public void changePassword(ChangePasswordByOldPasswordDTO dto, Long currentUserId){
 
-        User user = userDAO.findFullUserById(id);
-        if (PasswordUtil.checkPassword(oldPassword, user.getPasswordHash())){
-            String newPasswordHash = PasswordUtil.hashPassword(newPassword);
-            userDAO.updatePasswordHash(id, newPasswordHash);
+        User user = userRepository.findById(currentUserId).orElseThrow(() -> new EntityNotFoundException("Пользователь с таким id не найден"));
+        if (passwordEncoder.matches(ADMIN_PASSWORD, user.getPasswordHash())){
+            throw new ForbiddenException("Вы не можете изменять пароль на админ аккаунте");
+        }
+        if (passwordEncoder.matches(dto.oldPassword(), user.getPasswordHash())){
+            if (!user.getVersion().equals(dto.version())){
+                throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте ещё раз");
+            }
+            String newPasswordHash = passwordEncoder.encode(dto.newPassword());
+            user.setPasswordHash(newPasswordHash);
         }
         else{
             throw new ValidationException("Старый пароль введен неверно");
@@ -75,105 +99,114 @@ public class UserService {
 
     }
 
-    public void changePassword(String email, String code, String newPassword){
+    @Transactional
+    public void changePassword(ResetPasswordDTO dto){
 
-        User user = userDAO.findByEmail(email);
-
-        if (user==null){
-            throw new ValidationException("Неверный код или почта");
+        User user = userRepository.findByEmail(dto.email()).orElseThrow(() -> new ValidationException("Неверный код или почта"));
+        if (passwordEncoder.matches(ADMIN_PASSWORD, user.getPasswordHash())){
+            throw new ForbiddenException("Вы не можете изменять пароль на админ аккаунте");
         }
 
         Long UserId = user.getId();
 
-        if(!resetCodeService.validCode(UserId, code)){
+        if(!resetCodeService.validCode(UserId, dto.code())){
             throw new ValidationException("Неверный код или почта");
         }
 
-        String hashPassword = PasswordUtil.hashPassword(newPassword);
+        String hashPassword = passwordEncoder.encode(dto.newPassword());
 
-        userDAO.updatePasswordHash(user.getId(), hashPassword);
-
+        user.setPasswordHash(hashPassword);
         resetCodeService.deleteCodes(UserId);
     }
 
-    public void changeNickname(Long id, String newNickname){
-        User user = userDAO.findById(id);
+    @Transactional
+    public void changeNickname(ChangeNicknameDTO dto, Long currentUserId){
+        User user = userRepository.findById(currentUserId).orElse(null);
         if (user==null){
             throw new EntityNotFoundException("Пользователь не найден");
         }
-        if (user.getNickname().equals(newNickname)){
+        if (user.getNickname().equals("admin")){
+            throw new ForbiddenException("Вы не можете изменять никнейм на админ аккаунте");
+        }
+        if (user.getNickname().equals(dto.newNickname())){
             return;
         }
-        if (userDAO.existsNickname(newNickname)){
+        if (userRepository.existsByNickname(dto.newNickname())){
             throw new ConflictException("Такой никнейм уже существует");
         }
-        user.setNickname(newNickname);
-        userDAO.update(user);
+        if (!user.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте снова");
+        }
+        user.setNickname(dto.newNickname());
     }
 
-    public void changeEmail(Long id, String password, String newEmail){
-        User user = userDAO.findFullUserById(id);
-        if (user==null){
-            throw new EntityNotFoundException("Пользователь не найден");
-        }
-        if (user.getEmail().equals(newEmail)){
+    @Transactional
+    public void changeEmail(ChangeEmailDTO dto, Long currentUserId){
+        User user = userRepository.findById(currentUserId).orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+        if (user.getEmail().equals(dto.newEmail())){
             return;
         }
-        if (!PasswordUtil.checkPassword(password, user.getPasswordHash())){
-            throw new ServiceException("Пароль неверный");
+        if (user.getEmail().equals(ADMIN_EMAIL)){
+            throw new ForbiddenException("Вы не можете изменять емейл на админ аккаунте");
         }
-        if (userDAO.existsEmail(newEmail)){
-            throw new ServiceException("Такой адрес электронной почты уже занят");
+        if (!passwordEncoder.matches(dto.password(), user.getPasswordHash())){
+            throw new ValidationException("Пароль неверный");
         }
-
-        user.setEmail(newEmail);
-        userDAO.update(user);
+        if (userRepository.existsByEmail(dto.newEmail())){
+            throw new ConflictException("Такой адрес электронной почты уже занят");
+        }
+        if (!user.getVersion().equals(dto.version())){
+            throw new OptimisticLockException("Кто-то уже изменил данные. Попробуйте снова");
+        }
+        user.setEmail(dto.newEmail());
+        userRepository.save(user);
     }
 
-    public List<UserSummaryDTO> findAllUser(int page, int size){
-        int offset = (page-1)*size;
-        List<User> users = userDAO.findAll(size, offset);
-        List<UserSummaryDTO> userSummaryDTOS = users.stream()
-                .map(u -> new UserSummaryDTO(u.getId(), u.getNickname()))
-                .toList();
+    @Transactional(readOnly = true)
+    public Page<UserSummaryDTO> findAllUser(int page, int size){
+        Pageable pageable = PageRequest.of(page-1, size);
+        Page<User> users = userRepository.findAll(pageable);
+        Page<UserSummaryDTO> userSummaryDTOS = users.map(userMapper::toUserSummaryDTO);
 
         return userSummaryDTOS;
     }
 
+    @Transactional(readOnly = true)
     public long countAllUser(){
-        return userDAO.countAll();
+        return userRepository.count();
     }
 
+    @Transactional(readOnly = true)
     public User findById(Long id){
-        return userDAO.findById(id);
+        return userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
     }
 
+    @Transactional(readOnly = true)
     public User findUserByNickname(String nickname){
-        return userDAO.findByNickname(nickname);
+        return userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
     }
 
-    public User findUserByTokenHash(String tokenHash){
-        return userDAO.findUserByTokenHash(tokenHash);
+    @Transactional(readOnly = true)
+    public User findByEmailOrNickname(String emailOrNickname){
+        User user = userRepository.findByEmailOrNickname(emailOrNickname)
+                .orElse(null);
+        return user;
     }
 
-    public void deleteUser(Long id, boolean deleteBookOrNo){
-        if (deleteBookOrNo){
-            bookService.deleteAllBookByUserId(id);
-        }
-        userDAO.delete(id);
+//    public User findUserByTokenHash(String tokenHash){
+//        return userRepository.findUserByTokenHash(tokenHash);
+//    }
 
-    }
+//    public void deleteUser(Long id, boolean deleteBookOrNo){
+//        if (deleteBookOrNo){
+//            bookService.deleteAllBookByUserId(id);
+//        }
+//        userRepository.delete(id);
+//
+//    }
 
-    private void validateUser(User user){
-        if (user.getNickname() == null || user.getNickname().isBlank()){
-            throw new ValidationException("Никнейм не может быть пустым");
-        }
-        if (user.getEmail() == null || user.getEmail().isBlank()){
-            throw new ValidationException("Почта не может быть пустой");
-        }
-        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()){
-            throw new ValidationException("Пароль не может быть пустым");
-        }
-    }
+
 
 }

@@ -1,19 +1,92 @@
 package ru.anastasya.readingportal.models;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDateTime;
+import java.util.*;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+@ToString
+@Entity
+@EntityListeners(AuditingEntityListener.class)
+@Table(name = "books")
 public class Book {
 
+    @Id
+    @SequenceGenerator(name = "book_seq", sequenceName = "book_sequence", allocationSize = 5)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "book_seq")
     private Long id;
+    @Column(nullable = false)
     private String title;
+    @LastModifiedDate
+    @UpdateTimestamp
+    @Column(name = "date_changed")
     private LocalDateTime dateChanged;
+    @CreatedDate
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+    @Version
+    private Integer version;
 
-    private List<Genre> genres;
-    private List<User> authors;
+    @JoinTable(name = "books_genres",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "genre_id"))
+    @ManyToMany(fetch = FetchType.LAZY)
+    private Set<Genre> genres = new HashSet<>();
 
-    public Book() {
+    @JoinTable(name = "books_authors",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @ManyToMany(fetch = FetchType.LAZY)
+    private Set<User> authors = new HashSet<>();
+
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Volume> volumes = new ArrayList<>();
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof Book)) return false;
+        Book book = (Book) obj;
+        if (book.getId() == null) return false;
+        return Objects.equals(book.getId(), this.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return 31;
+    }
+
+    //использовать только в случае если список книг у автора потом понадобится,
+    //загружает всю коллекцию книг автора, создает нагрузку
+    public void addAuthor(User user){
+        authors.add(user);
+        user.getBooks().add(this);
+    }
+    //тоже самое
+    public void removeAuthor(User user){
+        authors.remove(user);
+        user.getBooks().remove(this);
+    }
+
+    public void addVolume(Volume volume){
+        volumes.add(volume);
+        volume.setBook(this);
+    }
+
+    public void removeVolume(Volume volume){
+        volumes.remove(volume);
+        volume.setBook(null);
     }
 
     public Book(String title) {
@@ -21,95 +94,5 @@ public class Book {
         this.title = title;
     }
 
-    public Book(String title, LocalDateTime dateChanged, LocalDateTime createdAt) {
-        this.id = null;
-        this.title = title;
-        this.dateChanged = dateChanged;
-        this.createdAt = createdAt;
-    }
-
-    public Book(String title, LocalDateTime dateChanged, LocalDateTime createdAt, List<Genre> genres, List<User> authors) {
-        this.id = null;
-        this.title = title;
-        this.dateChanged = dateChanged;
-        this.createdAt = createdAt;
-        this.genres = genres;
-        this.authors = authors;
-    }
-
-    public Book(Long id, String title, LocalDateTime dateChanged, LocalDateTime createdAt) {
-        this.id = id;
-        this.title = title;
-        this.dateChanged = dateChanged;
-        this.createdAt = createdAt;
-    }
-
-    public Book(Long id, String title, LocalDateTime dateChanged, LocalDateTime createdAt, List<Genre> genres, List<User> authors) {
-        this.id = id;
-        this.title = title;
-        this.dateChanged = dateChanged;
-        this.createdAt = createdAt;
-        this.genres = genres;
-        this.authors = authors;
-    }
-
-    @Override
-    public String toString() {
-        return "Book{" +
-                "id=" + id +
-                ", title='" + title + '\'' +
-                ", dateChanged=" + dateChanged +
-                ", createdAt=" + createdAt +
-                ", genres=" + genres +
-                ", authors=" + authors +
-                '}';
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public List<Genre> getGenres() {
-        return genres;
-    }
-
-    public void setGenres(List<Genre> genres) {
-        this.genres = genres;
-    }
-
-    public List<User> getAuthors() {
-        return authors;
-    }
-
-    public void setAuthors(List<User> authors) {
-        this.authors = authors;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public LocalDateTime getDateChanged() {
-        return dateChanged;
-    }
-
-    public void setDateChanged(LocalDateTime dateChanged) {
-        this.dateChanged = dateChanged;
-    }
 }
+

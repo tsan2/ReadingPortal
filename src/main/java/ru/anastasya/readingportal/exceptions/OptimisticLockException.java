@@ -1,0 +1,11 @@
+package ru.anastasya.readingportal.exceptions;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+@ResponseStatus(HttpStatus.CONFLICT)
+public class OptimisticLockException extends ServiceException {
+    public OptimisticLockException(String message) {
+        super(message);
+    }
+}

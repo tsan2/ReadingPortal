@@ -1,100 +1,53 @@
 package ru.anastasya.readingportal.models;
 
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "volumes")
 public class Volume {
 
+    @Id
+    @SequenceGenerator(name = "volume_seq", sequenceName = "volume_sequence", allocationSize = 5)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "volume_seq")
     private Long id;
     private String title;
+    @Column(name = "volume_main_number")
     private int volumeMainNumber;
+    @Column(name = "volume_sub_number")
     private int volumeSubNumber;
-    private Long bookId;
+    @Column(name = "is_default")
     private boolean isDefault;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "book_id")
+    private Book book;
+    @Version
+    private Integer version;
+    @OneToMany(mappedBy = "volume", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Chapter> chapters = new ArrayList<>();
 
-    public Volume() {
-
+    public void addChapter(Chapter chapter){
+        chapters.add(chapter);
+        chapter.setVolume(this);
     }
 
-    public Volume(String title, int volumeMainNumber, int volumeSubNumber, Long bookId) {
-        this.id = null;
+    public void removeChapter(Chapter chapter){
+        chapters.remove(chapter);
+        chapter.setVolume(null);
+    }
+
+    public Volume(String title, int volumeMainNumber, int volumeSubNumber, boolean isDefault) {
         this.title = title;
         this.volumeMainNumber = volumeMainNumber;
         this.volumeSubNumber = volumeSubNumber;
-        this.bookId = bookId;
-    }
-
-    public Volume(String title, int volumeMainNumber, int volumeSubNumber, Long bookId, boolean isDefault) {
-        this.id = null;
-        this.title = title;
-        this.volumeMainNumber = volumeMainNumber;
-        this.volumeSubNumber = volumeSubNumber;
-        this.bookId = bookId;
         this.isDefault = isDefault;
-    }
-
-    public Volume(Long id, String title, int volumeMainNumber, int volumeSubNumber, Long bookId, boolean isDefault) {
-        this.id = id;
-        this.title = title;
-        this.volumeMainNumber = volumeMainNumber;
-        this.volumeSubNumber = volumeSubNumber;
-        this.bookId = bookId;
-        this.isDefault = isDefault;
-    }
-
-    @Override
-    public String toString() {
-        return "Volume{" +
-                "id=" + id +
-                ", title='" + title + '\'' +
-                ", volumeMainNumber=" + volumeMainNumber +
-                ", volumeSubNumber=" + volumeSubNumber +
-                ", bookId=" + bookId +
-                '}';
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public int getVolumeMainNumber() {
-        return volumeMainNumber;
-    }
-
-    public void setVolumeMainNumber(int volumeMainNumber) {
-        this.volumeMainNumber = volumeMainNumber;
-    }
-
-    public int getVolumeSubNumber() {
-        return volumeSubNumber;
-    }
-
-    public void setVolumeSubNumber(int volumeSubNumber) {
-        this.volumeSubNumber = volumeSubNumber;
-    }
-
-    public Long getBookId() {
-        return bookId;
-    }
-
-    public void setBookId(Long bookId) {
-        this.bookId = bookId;
-    }
-
-    public boolean isDefault() {
-        return isDefault;
-    }
-
-    public void setDefault(boolean aDefault) {
-        this.isDefault = aDefault;
     }
 }

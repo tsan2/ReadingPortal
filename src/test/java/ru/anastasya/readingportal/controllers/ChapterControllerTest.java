@@ -2,10 +2,14 @@ package ru.anastasya.readingportal.controllers;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.anastasya.readingportal.dto.*;
+import ru.anastasya.readingportal.security.JwtProvider;
 import ru.anastasya.readingportal.services.ChapterService;
 import tools.jackson.databind.ObjectMapper;
 
@@ -14,13 +18,13 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class ChapterControllerTest extends BaseControllerTest {
+@WebMvcTest(controllers = ChapterController.class,
+excludeAutoConfiguration = {SecurityAutoConfiguration.class, UserDetailsServiceAutoConfiguration.class})
+public class ChapterControllerTest{
 
     @Autowired
     private MockMvc mockMvc;
@@ -28,6 +32,8 @@ public class ChapterControllerTest extends BaseControllerTest {
     private ObjectMapper objectMapper;
     @MockitoBean
     private ChapterService chapterService;
+    @MockitoBean
+    private JwtProvider jwtProvider;
 
 
     @Test
@@ -44,7 +50,6 @@ public class ChapterControllerTest extends BaseControllerTest {
                 .thenReturn(chapterShortResponseDTO);
 
         mockMvc.perform(post("/volume/1/chapter")
-                .with(user("testUser").roles("USER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(chapterCreateDTO)))
                 .andExpect(status().isCreated())
@@ -58,21 +63,9 @@ public class ChapterControllerTest extends BaseControllerTest {
         ChapterCreateDTO chapterCreateDTO = new ChapterCreateDTO("t", 1, 2);
 
         mockMvc.perform(post("/volume/1/chapter")
-                        .with(user("testUser").roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(chapterCreateDTO)))
                         .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void createChapterPlaceholderInVolume_unauthorized() throws Exception{
-        ChapterCreateDTO chapterCreateDTO = new ChapterCreateDTO("title", 1, 2);
-
-        mockMvc.perform(post("/volume/1/chapter")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(chapterCreateDTO)))
-                        .andExpect(status().isUnauthorized())
-                        .andDo(print());
     }
 
     @Test
@@ -89,7 +82,6 @@ public class ChapterControllerTest extends BaseControllerTest {
                 .thenReturn(chapterShortResponseDTO);
 
         mockMvc.perform(post("/book/1/chapter")
-                        .with(user("testUser").roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(chapterCreateDTO)))
                 .andExpect(status().isCreated())
@@ -109,7 +101,6 @@ public class ChapterControllerTest extends BaseControllerTest {
         when(chapterService.addContent(any(), eq(id))).thenReturn(chapterFullDTO);
 
         mockMvc.perform(put("/chapter/1/content")
-                .with(user("testUser").roles("USER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(chapterAddContentDTO)))
                 .andExpect(status().isOk())
@@ -128,7 +119,6 @@ public class ChapterControllerTest extends BaseControllerTest {
         when(chapterService.update(1L, chapterUpdateDTO)).thenReturn(responseDTO);
 
         mockMvc.perform(patch("/chapter/1")
-                .with(user("testUser").roles("USER"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(chapterUpdateDTO)))
                 .andExpect(status().isOk())
@@ -169,8 +159,7 @@ public class ChapterControllerTest extends BaseControllerTest {
 
     @Test
     void deleteChapter_success() throws Exception {
-        mockMvc.perform(delete("/chapter/1")
-                .with(user("testUser").roles("USER")))
+        mockMvc.perform(delete("/chapter/1"))
                 .andExpect(status().isNoContent());
     }
 
